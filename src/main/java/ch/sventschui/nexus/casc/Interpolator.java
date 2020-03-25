@@ -53,7 +53,7 @@ public class Interpolator extends ComponentSupport {
 
             if (value == null) {
                 if (defaultValue == null) {
-                    log.warn("Found no value to interpoalte variable {}", varName);
+                    log.warn("Found no value to interpolate variable {}", varName);
                     continue;
                 }
 

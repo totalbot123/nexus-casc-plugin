@@ -5,13 +5,13 @@
     <parent>
         <groupId>org.sonatype.nexus.plugins</groupId>
         <artifactId>nexus-plugins</artifactId>
-        <version>3.19.1-01</version>
+        <version>3.21.2-03</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.axa.ch.health.nexus.casc</groupId>
     <artifactId>nexus-casc-plugin</artifactId>
-    <version>3.19.1-01</version>
+    <version>3.21.2-03</version>
     <packaging>bundle</packaging>
 
     <properties>
@@ -19,6 +19,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.sonatype.nexus</groupId>
+            <artifactId>nexus-blobstore-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.sonatype.nexus</groupId>
             <artifactId>nexus-scheduling</artifactId>

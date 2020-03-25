@@ -60,6 +60,7 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
     public NexusCascPlugin(
             final CoreApi coreApi,
             final SecurityApi securityApi,
+            final SecuritySystem securitySystem,
             final CleanupPolicyStorage cleanupPolicyStorage,
             final Interpolator interpolator,
             final RepositoryManager repositoryManager,
@@ -68,7 +69,7 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
             final CapabilityRegistry capabilityRegistry) throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         this.coreApi = coreApi;
         this.securityApi = securityApi;
-        this.securitySystem = resolveSecuritySystem(securityApi);
+        this.securitySystem = securitySystem;
         this.blobStoreManager = blobStoreManager;
         this.cleanupPolicyStorage = cleanupPolicyStorage;
         this.interpolator = interpolator;
@@ -121,7 +122,7 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
     private void applyBaseUrlConfig(ConfigCore core) {
         if (core.getBaseUrl() != null) {
             String baseUrl = core.getBaseUrl().trim();
-            log.debug("Setting baseUrl to {}", baseUrl);
+            log.info("Setting baseUrl to {}", baseUrl);
             coreApi.baseUrl(baseUrl);
         }
     }
@@ -242,7 +243,7 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
                         log.error("Could not update blob store {}", configBlobStore.getName(), e);
                     }
                 } else {
-                    BlobStoreConfiguration config = new BlobStoreConfiguration();
+                    BlobStoreConfiguration config = blobStoreManager.newConfiguration();
                     config.setName(configBlobStore.getName());
                     config.setAttributes(configBlobStore.getAttributes());
                     config.setType(configBlobStore.getType());
@@ -255,7 +256,6 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
             });
         } else if (repository.getPruneBlobStores() != null && repository.getPruneBlobStores()) {
             log.warn("repository.pruneBlobStores has no effect when no blob stores are configured!");
-
         }
 
         if (repository.getCleanupPolicies() != null) {
@@ -269,7 +269,13 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
                     existingCp.setMode(cp.getMode());
                     cleanupPolicyStorage.update(existingCp);
                 } else {
-                    cleanupPolicyStorage.add(new CleanupPolicy(cp.getName(), cp.getNotes(), cp.getFormat(), cp.getMode(), cp.getCriteria()));
+                    CleanupPolicy newCp = cleanupPolicyStorage.newCleanupPolicy();
+                    newCp.setName(cp.getName());
+                    newCp.setNotes(cp.getNotes());
+                    newCp.setFormat(cp.getFormat());
+                    newCp.setMode(cp.getMode());
+                    newCp.setCriteria(cp.getCriteria());
+                    cleanupPolicyStorage.add(newCp);
                 }
             });
 
@@ -310,7 +316,7 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
                         log.error("Failed to update repo {}", repoConfig.getName(), e);
                     }
                 } else {
-                    Configuration configuration = new Configuration();
+                    Configuration configuration = repositoryManager.newConfiguration();
                     configuration.setRepositoryName(repoConfig.getName());
                     configuration.setRecipeName(repoConfig.getRecipeName());
                     configuration.setAttributes(repoConfig.getAttributes());
@@ -376,15 +382,6 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
                 }
             }
         }
-    }
-
-    /**
-     * Hack approach to SecurityApiImpl.getSecuritySystem as we can't use that class as otherwise
-     * the osgi subsystem will yell at us 🤦‍
-     */
-    private SecuritySystem resolveSecuritySystem(SecurityApi securityApi) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        Method m = securityApi.getClass().getMethod("getSecuritySystem");
-        return (SecuritySystem) m.invoke(securityApi);
     }
 
     /**
@@ -488,6 +485,4 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
             log.error("security.pruneUsers has no effect when not specifying any users!");
         }
     }
-
-
 }
