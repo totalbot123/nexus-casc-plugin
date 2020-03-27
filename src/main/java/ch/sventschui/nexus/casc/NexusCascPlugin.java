@@ -6,7 +6,10 @@ import org.sonatype.nexus.CoreApi;
 import org.sonatype.nexus.blobstore.api.BlobStore;
 import org.sonatype.nexus.blobstore.api.BlobStoreConfiguration;
 import org.sonatype.nexus.blobstore.api.BlobStoreManager;
-import org.sonatype.nexus.capability.*;
+import org.sonatype.nexus.capability.CapabilityIdentity;
+import org.sonatype.nexus.capability.CapabilityReference;
+import org.sonatype.nexus.capability.CapabilityRegistry;
+import org.sonatype.nexus.capability.CapabilityType;
 import org.sonatype.nexus.cleanup.storage.CleanupPolicy;
 import org.sonatype.nexus.cleanup.storage.CleanupPolicyStorage;
 import org.sonatype.nexus.common.app.ManagedLifecycle;
@@ -32,12 +35,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Named("cascPlugin")
