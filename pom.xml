@@ -84,6 +84,13 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>${project.basedir}/src/docker</directory>
+                <filtering>true</filtering>
+                <targetPath>${project.basedir}</targetPath>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.karaf.tooling</groupId>
