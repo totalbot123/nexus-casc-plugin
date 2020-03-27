@@ -1,0 +1,45 @@
+---
+version: 2.1
+
+jobs:
+  build:
+    machine: true
+    working_directory: ~/repo
+    steps:
+      - checkout:
+          path: ~/repo
+      #- run:
+      #    name: 'Docker login'
+      #    command: |
+      #      echo "$ARTIFACTORY_API_KEY" | docker login --username $ARTIFACTORY_USER --password-stdin weareadaptive-hydra-infrastructure.jfrog.io
+      - run:
+          name: 'Build image'
+          command: |
+            DOCKER_BUILDKIT=1 docker build -t weareadaptive-hydra-infrastructure.jfrog.io/nexus:${CIRCLE_BRANCH//[^[:alnum:]]/} .
+      - run:
+          name: 'Test image'
+          no_output_timeout: 5m
+          command: |
+            docker run -d -p 8081:8081 -e NEXUS_SECURITY_RANDOMPASSWORD=false -e BASE_URL=http://localhost:8081 -v $PWD/.circleci/adaptive-nexus.yml:/opt/nexus.yml:ro --name nexus weareadaptive-hydra-infrastructure.jfrog.io/nexus:${CIRCLE_BRANCH//[^[:alnum:]]/}
+            echo "Try to get metrics via new admin user"
+            SUCCESS=-1
+            # Approximately two minutes
+            for ((n=0; n < 12; n++)); do
+              if curl -sSfm 5 -u adaptive:admin123 http://localhost:8081/service/metrics/prometheus -o /dev/null; then
+                SUCCESS=0
+                break;
+              fi
+              sleep 5
+            done
+            docker container rm -f nexus
+            exit $SUCCESS
+      #- run:
+      #    name: 'Push image'
+      #    command: |
+      #      docker push weareadaptive-hydra-infrastructure.jfrog.io/nexus:${CIRCLE_BRANCH//[^[:alnum:]]/}
+
+workflows:
+  version: 2
+  docker:
+    jobs:
+      - build

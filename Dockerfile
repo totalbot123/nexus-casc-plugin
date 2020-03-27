@@ -21,7 +21,8 @@ RUN echo "reference\:file\:nexus-casc-plugin-${NEXUS_CASC_VERSION}.jar = 199" >>
 
 COPY --from=build --chown=root:root /target/nexus-casc-plugin-${NEXUS_CASC_VERSION}.jar /opt/sonatype/nexus/system/nexus-casc-plugin-${NEXUS_CASC_VERSION}.jar
 
-COPY default-nexus.yml /opt/nexus.yml
+# No configuration by default
+#COPY default-nexus.yml /opt/nexus.yml
 
 ENV NEXUS_CASC_CONFIG=/opt/nexus.yml
 
