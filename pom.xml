@@ -15,7 +15,9 @@
     <packaging>bundle</packaging>
 
     <properties>
+        <maven.surefire.version>2.22.2</maven.surefire.version>
         <junit.jupiter.version>5.6.1</junit.jupiter.version>
+        <org.yaml.snakeyaml.version>1.26</org.yaml.snakeyaml.version>
     </properties>
 
     <dependencies>
@@ -66,7 +68,7 @@
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>1.26</version>
+            <version>${org.yaml.snakeyaml.version}</version>
         </dependency>
 
         <dependency>
@@ -121,7 +123,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
+                <version>${maven.surefire.version}</version>
             </plugin>
         </plugins>
     </build>
