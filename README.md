@@ -4,38 +4,39 @@ Nexus CasC is a configuration as code plugin for sonatype nexus 3.
 
 This plugin allows to specify a YAML file to configure a Nexus instance on startup.
 
+## Why Fork?
+
+Forked from: https://github.com/sventschui/nexus-casc-plugin
+
+The original provider did not respond to PRs
+
+### Changes from the fork
+
+* The groupId has changed to avoid clashing with the original project
+* The build process now produces a `.kar` archive and can be directly deployed in
+  upstream Nexus via the `deploy` directory (providing the API versions match)
+* Unit tests and integration tests have been enabled
+* Basic CI has been added
+* Releases are currently pushed to our private repository, this may change in the future
+
 ## Usage
 
-### Docker
+**Warning**: Use the project version that matches your Nexus version. 
+This is because the project is tied to specific version of the Nexus API and there is no guarantee
+the API remains consistent.
 
-When using docker the easiest way to get started is to use the `sventschui/nexus-casc` image that inherits form `sonatype/nexus3`.
-
-The docker image supports the same options as the `sonatype/nexus3` image plus the following additions.
+Deploy the .kar archive using the upstream `sonatype/nexus3` image in the `/opt/sonatype/nexus/deploy/` directory.
+The plugin will be automatically installed on startup.
 
 It expects a YAML configuration file to be mounted to `/opt/nexus.yml` (This path can be overridden using the `NEXUS_CASC_CONFIG` env var).
 
 The format of the YAML file is documented below.
 
-### Manual installation
-
-Download the Nexus CasC plugin [here](https://github.com/sventschui/nexus-casc-plugin/releases) and copy it into the `systems` folder of your nexus installation.
-This folder resides in `/opt/sonatype/nexus/system/` when using the `sonatype/nexus3` docker image.
-
-Append the following line to the `etc/karaf/startup.properties` (`/opt/sonatype/nexus/etc/karaf/startup.properties` in the `sonatype/nexus3` docker image) file. 
-Replace the `<NEXUS_CASC_VERSION>` placeholder with the version of the Nexus CasC plugin you downloaded. 
-
-```
-reference\:file\:nexus-casc-plugin-<NEXUS_CASC_VERSION>.jar = 199
-```
-
-Create a YAML configuration file (as documented below) and add its path to the `NEXUS_CASC_CONFIG`
-environment variable.
-
-Now you can start Nexus as usual.
+Start Nexus as usual.
 
 ## Configuration file
 
-You can find an example configuration file [here](https://github.com/sventschui/nexus-casc-plugin/blob/master/default-nexus.yml).
+You can find an example configuration file [here](https://github.com/AdaptiveConsulting/nexus-casc-plugin/blob/master/default-nexus.yml).
 
 ### Interpolation 
 

@@ -1,5 +1,5 @@
-.idea/
+/.idea/
+/.jfrog/
 *.iml
 target/
-.data/
 /.env

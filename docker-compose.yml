@@ -2,9 +2,13 @@
 # Useful for local debugging of the scripts.
 version: '3.7'
 
+secrets:
+  password_johndoe:
+    file: ./password_johndoe
+
 services:
   nexus:
-    image: 'sonatype/nexus3:latest'
+    image: 'sonatype/nexus3:${NEXUS_DOCKER_VERSION}'
     container_name: 'nexus'
     user: 'nexus'
     environment:
@@ -14,16 +18,18 @@ services:
     networks:
       - 'nexus'
     ports:
-      - '5005:5005'
-      - '8081:8081'
-      - '18090:18090'
-      - '18091:18091'
+      #- '5005:5005'
+      - '${NEXUS_UI_PORT}:8081'
+      #- '18090:18090'
+      #- '18091:18091'
+    secrets:
+      - password_johndoe
     ulimits:
       nofile:
         soft: 65536
         hard: 65536
     volumes:
-      - './.circleci/adaptive-nexus.yml:/opt/nexus.yml:ro'
+      - './default-nexus.yml:/opt/nexus.yml:ro'
       - './target/nexus-casc-plugin-${PLUGIN_VERSION}-bundle.kar:/opt/sonatype/nexus/deploy/nexus-casc-plugin-${PLUGIN_VERSION}-bundle.kar:ro'
       - 'nexus-data:/nexus-data'
 

@@ -4,19 +4,11 @@ core:
   httpsProxy: ${HTTPS_PROXY:""}
   nonProxyHosts: ${NO_PROXY:""} # TODO: allow to have a list here...
 capabilities:
-  - type: rutauth
-    enabled: true
-    notes: "Nexus CasC"
-    attributes:
-      httpHeader: REMOTE_USER
   - type: OutreachManagementCapability
     enabled: false
 security:
   anonymousAccess: false
   pruneUsers: true
-  realms:
-    - name: rutauth-realm
-      enabled: true
   users:
     - username: johndoe
       firstName: John
@@ -80,7 +72,7 @@ repository:
       notes: ''
       criteria:
         lastDownloaded: 864000
-  pruneRepositories: false # true
+  pruneRepositories: true
   repositories:
     - name: npm-proxy
       online: true
@@ -141,31 +133,6 @@ repository:
           name: cleanup-maven-proxy
         httpclient:
         maven-indexer:
-    - name: maven-tudelft
-      online: true
-      recipeName: maven2-proxy
-      attributes:
-        proxy:
-          contentMaxAge: -1
-          remoteUrl: https://simulation.tudelft.nl/maven/
-          metadataMaxAge: 1440
-        negativeCache:
-          timeToLive: 1440
-          enabled: true
-        storage:
-          strictContentTypeValidation: false
-          blobStoreName: maven
-        httpClient:
-          connection:
-            blocked: false
-            autoBlock: true
-        maven:
-          versionPolicy: RELEASE
-          layoutPolicy: PERMISSIVE
-        cleanupPolicy:
-          name: cleanup-maven-proxy
-        httpclient:
-        maven-indexer:
     - name: maven-public
       online: true
       recipeName: maven2-group
@@ -176,7 +143,6 @@ repository:
           memberNames:
            - "maven-central"
            - "maven-snapshots"
-           - "maven-tudelft"
         storage:
           blobStoreName: maven
     - name: docker-hosted
@@ -255,4 +221,3 @@ repository:
           memberNames:
            - "npm-proxy"
            - "npm-hosted"
-

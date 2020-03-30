@@ -1,4 +1,4 @@
-package ch.sventschui.nexus.casc;
+package com.weareadaptive.nexus.casc;
 
 import org.sonatype.goodies.common.ComponentSupport;
 

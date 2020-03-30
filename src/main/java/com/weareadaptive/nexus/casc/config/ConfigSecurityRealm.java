@@ -1,4 +1,4 @@
-package ch.sventschui.nexus.casc.config;
+package com.weareadaptive.nexus.casc.config;
 
 public class ConfigSecurityRealm {
     private String name;

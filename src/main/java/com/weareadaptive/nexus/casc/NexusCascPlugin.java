@@ -1,6 +1,6 @@
-package ch.sventschui.nexus.casc;
+package com.weareadaptive.nexus.casc;
 
-import ch.sventschui.nexus.casc.config.*;
+import com.weareadaptive.nexus.casc.config.*;
 import org.eclipse.sisu.Description;
 import org.sonatype.nexus.CoreApi;
 import org.sonatype.nexus.blobstore.api.BlobStore;
@@ -79,7 +79,16 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
     @Override
     protected void doStart() throws Exception {
         String configFile = System.getenv("NEXUS_CASC_CONFIG");
-
+        /*
+        EcrClient ecrClient = EcrClient.builder().region(Region.EU_WEST_1).build();
+        GetAuthorizationTokenResponse response = ecrClient.getAuthorizationToken();
+        List<AuthorizationData> authorizationDataList = response.authorizationData();
+        String token;
+        if (response.hasAuthorizationData())
+          token = new String(Base64.getDecoder().decode(authorizationDataList.get(0).authorizationToken()));
+        else
+          token = "unavailable";
+        */
         if (configFile == null) {
             log.error("Env var NEXUS_CASC_CONFIG not found");
             return;
