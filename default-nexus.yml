@@ -96,7 +96,8 @@ repository:
           enabled: true
           timeToLive: 1440.0
         cleanup:
-          policyName: cleanup-npm-proxy
+          policyName:
+            - cleanup-npm-proxy
     - name: maven-snapshots
       online: true
       recipeName: maven2-hosted
@@ -122,17 +123,16 @@ repository:
         storage:
           strictContentTypeValidation: false
           blobStoreName: maven
-        httpClient:
+        httpclient:
           connection:
             blocked: false
             autoBlock: true
         maven:
           versionPolicy: RELEASE
           layoutPolicy: PERMISSIVE
-        cleanupPolicy:
-          name: cleanup-maven-proxy
-        httpclient:
-        maven-indexer:
+        cleanup:
+          policyName:
+            - cleanup-maven-proxy
     - name: maven-public
       online: true
       recipeName: maven2-group
@@ -157,7 +157,8 @@ repository:
           strictContentTypeValidation: true
           writePolicy: ALLOW_ONCE
         cleanup:
-          policyName: None
+          policyName:
+            - None
     - name: docker-proxy
       online: true
       recipeName: docker-proxy
@@ -185,7 +186,8 @@ repository:
           enabled: true
           timeToLive: 1440.0
         cleanup:
-          policyName: cleanup-docker-proxy
+          policyName:
+            - cleanup-docker-proxy
     - name: docker
       online: true
       recipeName: docker-group
@@ -209,7 +211,8 @@ repository:
           strictContentTypeValidation: true
           writePolicy: ALLOW_ONCE
         cleanup:
-          policyName: None
+          policyName:
+            - None
     - name: npm
       online: true
       recipeName: npm-group
