@@ -1,4 +1,4 @@
-package com.weareadaptive.nexus.casc.config;
+package com.weareadaptive.nexus.casc.plugin.internal.config;
 
 import org.sonatype.nexus.blobstore.file.FileBlobStore;
 

@@ -1,4 +1,4 @@
-package com.weareadaptive.nexus.casc;
+package com.weareadaptive.nexus.casc.plugin.internal;
 
 import org.junit.jupiter.api.Test;
 

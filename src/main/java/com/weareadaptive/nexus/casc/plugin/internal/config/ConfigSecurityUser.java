@@ -1,4 +1,4 @@
-package com.weareadaptive.nexus.casc.config;
+package com.weareadaptive.nexus.casc.plugin.internal.config;
 
 import java.util.List;
 
@@ -8,7 +8,7 @@ public class ConfigSecurityUser {
     private String lastName;
     private String password;
     private Boolean updateExistingPassword;
-    private List<ConfigSecurityRole> roles;
+    private List<ConfigSecurityUserRole> roles;
     private String email;
     private Boolean active;
 
@@ -52,11 +52,11 @@ public class ConfigSecurityUser {
         this.updateExistingPassword = updateExistingPassword;
     }
 
-    public List<ConfigSecurityRole> getRoles() {
+    public List<ConfigSecurityUserRole> getRoles() {
         return roles;
     }
 
-    public void setRoles(List<ConfigSecurityRole> roles) {
+    public void setRoles(List<ConfigSecurityUserRole> roles) {
         this.roles = roles;
     }
 

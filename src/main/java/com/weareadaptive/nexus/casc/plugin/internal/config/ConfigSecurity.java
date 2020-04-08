@@ -1,10 +1,11 @@
-package com.weareadaptive.nexus.casc.config;
+package com.weareadaptive.nexus.casc.plugin.internal.config;
 
 import java.util.List;
 
 public class ConfigSecurity {
     private Boolean anonymousAccess;
     private Boolean pruneUsers;
+    private List<ConfigSecurityRole> roles;
     private List<ConfigSecurityUser> users;
     private List<ConfigSecurityRealm> realms;
 
@@ -39,4 +40,8 @@ public class ConfigSecurity {
     public void setRealms(List<ConfigSecurityRealm> realms) {
         this.realms = realms;
     }
+
+    public List<ConfigSecurityRole> getRoles() { return roles; }
+
+    public void setRoles(List<ConfigSecurityRole> roles) { this.roles = roles; }
 }

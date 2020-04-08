@@ -1,4 +1,4 @@
-package com.weareadaptive.nexus.casc.config;
+package com.weareadaptive.nexus.casc.plugin.internal.config;
 
 public class ConfigSecurityRealm {
     private String name;

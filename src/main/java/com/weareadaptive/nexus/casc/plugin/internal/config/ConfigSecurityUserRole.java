@@ -1,6 +1,6 @@
-package com.weareadaptive.nexus.casc.config;
+package com.weareadaptive.nexus.casc.plugin.internal.config;
 
-public class ConfigSecurityRole {
+public class ConfigSecurityUserRole {
     private String source;
     private String role;
 

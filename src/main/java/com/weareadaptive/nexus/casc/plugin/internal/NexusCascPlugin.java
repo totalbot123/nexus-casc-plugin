@@ -1,6 +1,6 @@
-package com.weareadaptive.nexus.casc;
+package com.weareadaptive.nexus.casc.plugin.internal;
 
-import com.weareadaptive.nexus.casc.config.*;
+import com.weareadaptive.nexus.casc.plugin.internal.config.*;
 import org.eclipse.sisu.Description;
 import org.sonatype.nexus.CoreApi;
 import org.sonatype.nexus.blobstore.api.BlobStore;
@@ -13,13 +13,18 @@ import org.sonatype.nexus.capability.CapabilityType;
 import org.sonatype.nexus.cleanup.storage.CleanupPolicy;
 import org.sonatype.nexus.cleanup.storage.CleanupPolicyStorage;
 import org.sonatype.nexus.common.app.ManagedLifecycle;
+import org.sonatype.nexus.common.app.NotWritableException;
 import org.sonatype.nexus.common.stateguard.StateGuardLifecycleSupport;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.config.Configuration;
 import org.sonatype.nexus.repository.manager.RepositoryManager;
 import org.sonatype.nexus.security.SecurityApi;
 import org.sonatype.nexus.security.SecuritySystem;
+import org.sonatype.nexus.security.authz.AuthorizationManager;
+import org.sonatype.nexus.security.authz.NoSuchAuthorizationManagerException;
 import org.sonatype.nexus.security.realm.RealmManager;
+import org.sonatype.nexus.security.role.NoSuchRoleException;
+import org.sonatype.nexus.security.role.Role;
 import org.sonatype.nexus.security.role.RoleIdentifier;
 import org.sonatype.nexus.security.user.*;
 import org.yaml.snakeyaml.Yaml;
@@ -41,7 +46,7 @@ import java.util.stream.Collectors;
 @Named("cascPlugin")
 @Description("Casc Plugin")
 // Plugin must run after CAPABILITIES phase as otherwise we can not load/patch existing capabilities
-@ManagedLifecycle(phase = ManagedLifecycle.Phase.TASKS)
+@ManagedLifecycle(phase = ManagedLifecycle.Phase.CAPABILITIES)
 @Singleton
 public class NexusCascPlugin extends StateGuardLifecycleSupport {
     private final CoreApi coreApi;
@@ -79,16 +84,6 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
     @Override
     protected void doStart() throws Exception {
         String configFile = System.getenv("NEXUS_CASC_CONFIG");
-        /*
-        EcrClient ecrClient = EcrClient.builder().region(Region.EU_WEST_1).build();
-        GetAuthorizationTokenResponse response = ecrClient.getAuthorizationToken();
-        List<AuthorizationData> authorizationDataList = response.authorizationData();
-        String token;
-        if (response.hasAuthorizationData())
-          token = new String(Base64.getDecoder().decode(authorizationDataList.get(0).authorizationToken()));
-        else
-          token = "unavailable";
-        */
         if (configFile == null) {
             log.error("Env var NEXUS_CASC_CONFIG not found");
             return;
@@ -415,6 +410,69 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
             });
         }
 
+        if (security.getRoles() != null) {
+            List<String> sources = security.getRoles().stream().map(ConfigSecurityRole::getSource).distinct().collect(Collectors.toList());
+
+            if (sources != null) {
+                sources.forEach(source -> {
+                    try {
+                        AuthorizationManager authManager = securitySystem.getAuthorizationManager(source);
+                        if (!authManager.supportsWrite())
+                            throw new NotWritableException("AuthorizationManager: " + source);
+                        List<ConfigSecurityRole> roles = security.getRoles().stream().filter(p -> p.getSource().contentEquals(source)).collect(Collectors.toList());
+                        if (roles != null) {
+                            roles.forEach(r -> {
+                                if (r.isEnabled()) {
+                                    Role tmpRole;
+                                    Boolean update = false;
+                                    try {
+                                        tmpRole = authManager.getRole(r.getId());
+                                        update = true;
+                                        tmpRole.setName(r.getName());
+                                        tmpRole.setDescription(r.getDescription());
+                                        tmpRole.setReadOnly(false);
+                                        tmpRole.setRoles(r.getRoles().stream().collect(Collectors.toSet()));
+                                        tmpRole.setPrivileges(r.getPrivileges().stream().collect(Collectors.toSet()));
+                                    } catch (NoSuchRoleException e) {
+                                        tmpRole = new Role(
+                                                r.getId(),
+                                                r.getName(),
+                                                r.getDescription(),
+                                                r.getSource(),
+                                                false,
+                                                r.getRoles() != null ? r.getRoles().stream().distinct().collect(Collectors.toSet()) : null,
+                                                r.getPrivileges() != null ? r.getPrivileges().stream().distinct().collect(Collectors.toSet()) : null
+                                        );
+                                    }
+
+                                    try {
+                                        if (update) {
+                                            log.info("Updating role {}", r.getId());
+                                            authManager.updateRole(tmpRole);
+
+                                        } else {
+                                            log.info("Creating role {}", r.getId());
+                                            authManager.addRole(tmpRole);
+                                        }
+                                    } catch (RuntimeException e) {
+                                        log.error("Failed to create/update role {}", r.getId(), e);
+                                    }
+                                } else {
+                                    authManager.deleteRole(r.getId());
+                                }
+                            });
+                        }
+                    } catch (NoSuchAuthorizationManagerException e) {
+                        log.error("AuthorizationManager {} does not exist.", source, e);
+                    } catch (NotWritableException e) {
+                        log.error("AuthorizationManager {} is not writable", source, e);
+                    }
+                });
+            } else {
+                log.info("No sources were available for roles");
+            }
+        }
+
         if (security.getUsers() != null) {
             security.getUsers().forEach(userConfig -> {
                 User existingUser = null;
@@ -469,7 +527,7 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
                             userConfig.getEmail(),
                             userConfig.getActive() != null ? userConfig.getActive() : true,
                             userConfig.getPassword(),
-                            userConfig.getRoles().stream().map(ConfigSecurityRole::getRole).collect(Collectors.toList())
+                            userConfig.getRoles().stream().map(ConfigSecurityUserRole::getRole).collect(Collectors.toList())
                     );
                 }
             });
