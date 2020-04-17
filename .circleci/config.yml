@@ -13,7 +13,7 @@ jobs:
       upload:
         default: false
         description: "Upload to Artefact Repository"
-        type:  boolean
+        type: boolean
     executor: executor
     steps:
       - checkout
@@ -35,7 +35,6 @@ jobs:
                 name: Push to Artifactory
                 environment:
                   JFROG_CLI_OFFER_CONFIG: "false"
-                      # required by jfrog rt mvn commands
                 command: |
                   export JFROG_CLI_BUILD_NAME="$CIRCLE_PROJECT_REPONAME"
                   export JFROG_CLI_BUILD_NUMBER="$CIRCLE_BUILD_NUM"

@@ -1,8 +1,10 @@
+---
 core:
   baseUrl: ${BASE_URL:""}
   httpProxy: ${HTTP_PROXY:""}
   httpsProxy: ${HTTPS_PROXY:""}
-  nonProxyHosts: ${NO_PROXY:""} # TODO: allow to have a list here...
+  # TODO: allow to have a list here...
+  nonProxyHosts: ${NO_PROXY:""}
 capabilities:
   - type: OutreachManagementCapability
     enabled: false
@@ -150,8 +152,8 @@ repository:
           versionPolicy: MIXED
         group:
           memberNames:
-           - "maven-central"
-           - "maven-snapshots"
+            - "maven-central"
+            - "maven-snapshots"
         storage:
           blobStoreName: maven
     - name: docker-hosted
@@ -231,5 +233,5 @@ repository:
           strictContentTypeValidation: true
         group:
           memberNames:
-           - "npm-proxy"
-           - "npm-hosted"
+            - "npm-proxy"
+            - "npm-hosted"

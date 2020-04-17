@@ -21,7 +21,7 @@ The original provider did not respond to PRs
 
 ## Usage
 
-**Warning**: Use the project version that matches your Nexus version. 
+**Warning**: Use the project version that matches your Nexus version.
 This is because the project is tied to specific version of the Nexus API and there is no guarantee
 the API remains consistent.
 
@@ -38,7 +38,7 @@ Start Nexus as usual.
 
 You can find an example configuration file [here](https://github.com/AdaptiveConsulting/nexus-casc-plugin/blob/master/default-nexus.yml).
 
-### Interpolation 
+### Interpolation
 
 Use `${ENV_VAR}` for env var interpolation. Use `${ENV_VAR:default}` or `${ENV_VAR:"default"}` for default values.
 
@@ -110,7 +110,7 @@ repository:
         blobStoreQuotaConfig:
           quotaLimitBytes: 10240000000
           quotaType: spaceUsedQuota
-  pruneCleanupPolicies: true # True to delete cleanup policies not present in this configuration file 
+  pruneCleanupPolicies: true # True to delete cleanup policies not present in this configuration file
   cleanupPolicies:
     - name: cleanup-maven-proxy
       format: maven2
