@@ -1,6 +1,7 @@
 package com.weareadaptive.nexus.casc.plugin.internal;
 
 import com.weareadaptive.nexus.casc.plugin.internal.config.*;
+import org.apache.shiro.util.ThreadContext;
 import org.eclipse.sisu.Description;
 import org.sonatype.nexus.CoreApi;
 import org.sonatype.nexus.blobstore.api.BlobStore;
@@ -26,6 +27,7 @@ import org.sonatype.nexus.security.realm.RealmManager;
 import org.sonatype.nexus.security.role.NoSuchRoleException;
 import org.sonatype.nexus.security.role.Role;
 import org.sonatype.nexus.security.role.RoleIdentifier;
+import org.sonatype.nexus.security.subject.FakeAlmightySubject;
 import org.sonatype.nexus.security.user.*;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
@@ -506,9 +508,12 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
 
                     if (userConfig.getUpdateExistingPassword() != null && userConfig.getUpdateExistingPassword()) {
                         try {
+                            ThreadContext.bind(FakeAlmightySubject.forUserId("nexus:*"));
                             securitySystem.changePassword(existingUser.getUserId(), userConfig.getPassword());
                         } catch (UserNotFoundException e) {
                             log.error("Failed to update password of user {}", existingUser.getUserId(), e);
+                        } finally {
+                            ThreadContext.remove();
                         }
                     }
 

@@ -25,10 +25,10 @@ security:
       firstName: John
       lastName: Doe
       password: "${file:/run/secrets/password_johndoe}"
-      updateExistingPassword: false
+      updateExistingPassword: true
       email: johndoe@exmaple.org
       roles:
-        - source: ""
+        - source: "default"
           role: nx-admin
     - username: janedoe
       firstName: Jane
@@ -37,7 +37,7 @@ security:
       updateExistingPassword: false
       email: janedoe@exmaple.org
       roles:
-        - source: ""
+        - source: "default"
           role: repository-write-all
 repository:
   pruneBlobStores: true
