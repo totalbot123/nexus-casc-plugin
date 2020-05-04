@@ -13,6 +13,7 @@ import org.sonatype.nexus.capability.CapabilityRegistry;
 import org.sonatype.nexus.capability.CapabilityType;
 import org.sonatype.nexus.cleanup.storage.CleanupPolicy;
 import org.sonatype.nexus.cleanup.storage.CleanupPolicyStorage;
+import org.sonatype.nexus.common.app.BaseUrlManager;
 import org.sonatype.nexus.common.app.ManagedLifecycle;
 import org.sonatype.nexus.common.app.NotWritableException;
 import org.sonatype.nexus.common.stateguard.StateGuardLifecycleSupport;
@@ -48,9 +49,10 @@ import java.util.stream.Collectors;
 @Named("cascPlugin")
 @Description("Casc Plugin")
 // Plugin must run after CAPABILITIES phase as otherwise we can not load/patch existing capabilities
-@ManagedLifecycle(phase = ManagedLifecycle.Phase.CAPABILITIES)
+@ManagedLifecycle(phase = ManagedLifecycle.Phase.TASKS)
 @Singleton
 public class NexusCascPlugin extends StateGuardLifecycleSupport {
+    private final BaseUrlManager baseUrlManager;
     private final CoreApi coreApi;
     private final SecurityApi securityApi;
     private final SecuritySystem securitySystem;
@@ -63,6 +65,7 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
 
     @Inject
     public NexusCascPlugin(
+            final BaseUrlManager baseUrlManager,
             final CoreApi coreApi,
             final SecurityApi securityApi,
             final SecuritySystem securitySystem,
@@ -72,6 +75,7 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
             final BlobStoreManager blobStoreManager,
             final RealmManager realmManager,
             final CapabilityRegistry capabilityRegistry) throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        this.baseUrlManager = baseUrlManager;
         this.coreApi = coreApi;
         this.securityApi = securityApi;
         this.securitySystem = securitySystem;
@@ -111,6 +115,8 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
         if (security != null) {
             applySecurityConfig(security);
         }
+
+        baseUrlManager.detectAndHoldUrl();
 
         ConfigRepository repository = config.getRepository();
         if (repository != null) {
@@ -306,6 +312,8 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
                     }
 
                     Configuration configuration = existingRepo.getConfiguration();
+                    log.info("repo config: {}", configuration);
+
                     configuration.setAttributes(repoConfig.getAttributes());
 
                     patchRepoAttributes(repoConfig.getAttributes());

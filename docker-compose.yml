@@ -12,6 +12,7 @@ services:
     container_name: 'nexus'
     user: 'nexus'
     environment:
+      BASE_URL: 'http://localhost:8081'
       NEXUS_SECURITY_RANDOMPASSWORD: 'false'
       NEXUS_CASC_CONFIG: '/opt/nexus.yml'
       # INSTALL4J_ADD_VM_PARAMS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"
