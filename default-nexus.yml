@@ -11,6 +11,13 @@ capabilities:
 security:
   anonymousAccess: false
   pruneUsers: true
+  realms:
+    - name: "DockerToken"
+      enabled: true
+    - name: "NpmToken"
+      enabled: true
+    - name: "NuGetApiKey"
+      enabled: true
   roles:
     - id: repository-write-all
       enabled: true
@@ -18,6 +25,8 @@ security:
       name: repository-write-all
       description: "Write All permission for repositories"
       privileges:
+        - nx-apikey-all
+        - nx-healthcheck-read
         - nx-repository-view-*-*-*
         - nx-search-read
   users:
@@ -42,6 +51,14 @@ security:
 repository:
   pruneBlobStores: true
   blobStores:
+    - name: docker
+      type: File
+      attributes:
+        file:
+          path: docker
+        blobStoreQuotaConfig:
+          quotaLimitBytes: 10240000000
+          quotaType: spaceUsedQuota
     - name: maven
       type: File
       attributes:
@@ -58,16 +75,21 @@ repository:
         blobStoreQuotaConfig:
           quotaLimitBytes: 10240000000
           quotaType: spaceUsedQuota
-    - name: docker
+    - name: nuget
       type: File
       attributes:
         file:
-          path: docker
+          path: nuget
         blobStoreQuotaConfig:
           quotaLimitBytes: 10240000000
           quotaType: spaceUsedQuota
   pruneCleanupPolicies: true
   cleanupPolicies:
+    - name: cleanup-docker-proxy
+      format: docker
+      notes: ''
+      criteria:
+        lastDownloaded: 864000
     - name: cleanup-maven-proxy
       format: maven2
       notes: ''
@@ -78,84 +100,13 @@ repository:
       notes: ''
       criteria:
         lastDownloaded: 864000
-    - name: cleanup-docker-proxy
-      format: docker
+    - name: cleanup-nuget-proxy
+      format: nuget
       notes: ''
       criteria:
         lastDownloaded: 864000
   pruneRepositories: true
   repositories:
-    - name: npm-proxy
-      online: true
-      recipeName: npm-proxy
-      attributes:
-        proxy:
-          remoteUrl: https://registry.npmjs.org
-          contentMaxAge: -1.0
-          metadataMaxAge: 1440.0
-        httpclient:
-          blocked: false
-          autoBlock: true
-          connection:
-            useTrustStore: false
-        storage:
-          blobStoreName: npm
-          strictContentTypeValidation: true
-        routingRules:
-          routingRuleId: null
-        negativeCache:
-          enabled: true
-          timeToLive: 1440.0
-        cleanup:
-          policyName:
-            - cleanup-npm-proxy
-    - name: maven-snapshots
-      online: true
-      recipeName: maven2-hosted
-      attributes:
-        maven:
-          versionPolicy: SNAPSHOT
-          layoutPolicy: STRICT
-        storage:
-          writePolicy: ALLOW
-          strictContentTypeValidation: false
-          blobStoreName: maven
-    - name: maven-central
-      online: true
-      recipeName: maven2-proxy
-      attributes:
-        proxy:
-          contentMaxAge: -1
-          remoteUrl: https://repo1.maven.org/maven2/
-          metadataMaxAge: 1440
-        negativeCache:
-          timeToLive: 1440
-          enabled: true
-        storage:
-          strictContentTypeValidation: false
-          blobStoreName: maven
-        httpclient:
-          connection:
-            blocked: false
-            autoBlock: true
-        maven:
-          versionPolicy: RELEASE
-          layoutPolicy: PERMISSIVE
-        cleanup:
-          policyName:
-            - cleanup-maven-proxy
-    - name: maven-public
-      online: true
-      recipeName: maven2-group
-      attributes:
-        maven:
-          versionPolicy: MIXED
-        group:
-          memberNames:
-            - "maven-central"
-            - "maven-snapshots"
-        storage:
-          blobStoreName: maven
     - name: docker-hosted
       online: true
       recipeName: docker-hosted
@@ -176,7 +127,7 @@ repository:
       attributes:
         docker:
           forceBasicAuth: true
-          v1Enabled: false
+          v1Enabled: true
         proxy:
           remoteUrl: https://registry-1.docker.io
           contentMaxAge: -1.0
@@ -213,6 +164,65 @@ repository:
           memberNames:
             - "docker-hosted"
             - "docker-proxy"
+    - name: maven-snapshots
+      online: true
+      recipeName: maven2-hosted
+      attributes:
+        maven:
+          versionPolicy: SNAPSHOT
+          layoutPolicy: STRICT
+        storage:
+          writePolicy: ALLOW
+          strictContentTypeValidation: true
+          blobStoreName: maven
+    - name: maven-releases
+      online: true
+      recipeName: maven2-hosted
+      attributes:
+        maven:
+          versionPolicy: RELEASE
+          layoutPolicy: STRICT
+        storage:
+          writePolicy: ALLOW_ONCE
+          strictContentTypeValidation: true
+          blobStoreName: maven
+    - name: maven-central
+      online: true
+      recipeName: maven2-proxy
+      attributes:
+        proxy:
+          contentMaxAge: -1
+          remoteUrl: https://repo1.maven.org/maven2/
+          metadataMaxAge: 1440
+        negativeCache:
+          timeToLive: 1440
+          enabled: true
+        storage:
+          strictContentTypeValidation: false
+          blobStoreName: maven
+        httpclient:
+          connection:
+            blocked: false
+            autoBlock: true
+        maven:
+          versionPolicy: RELEASE
+          layoutPolicy: PERMISSIVE
+        cleanup:
+          policyName:
+            - cleanup-maven-proxy
+    - name: maven
+      online: true
+      recipeName: maven2-group
+      attributes:
+        maven:
+          versionPolicy: MIXED
+        group:
+          memberNames:
+            - "maven-snapshots"
+            - "maven-releases"
+            - "maven-central"
+        storage:
+          blobStoreName: maven
     - name: npm-hosted
       online: true
       recipeName: npm-hosted
@@ -224,6 +234,30 @@ repository:
         cleanup:
           policyName:
             - None
+    - name: npm-proxy
+      online: true
+      recipeName: npm-proxy
+      attributes:
+        proxy:
+          remoteUrl: https://registry.npmjs.org
+          contentMaxAge: -1.0
+          metadataMaxAge: 1440.0
+        httpclient:
+          blocked: false
+          autoBlock: true
+          connection:
+            useTrustStore: false
+        storage:
+          blobStoreName: npm
+          strictContentTypeValidation: true
+        routingRules:
+          routingRuleId: null
+        negativeCache:
+          enabled: true
+          timeToLive: 1440.0
+        cleanup:
+          policyName:
+            - cleanup-npm-proxy
     - name: npm
       online: true
       recipeName: npm-group
@@ -235,3 +269,44 @@ repository:
           memberNames:
             - "npm-proxy"
             - "npm-hosted"
+    - name: nuget-proxy
+      online: true
+      recipeName: nuget-proxy
+      attributes:
+        proxy:
+          remoteUrl: https://api.nuget.org/v3/index.json
+          contentMaxAge: -1.0
+          metadataMaxAge: 1440.0
+        httpclient:
+          blocked: false
+          autoBlock: true
+          connection:
+            useTrustStore: false
+        storage:
+          blobStoreName: nuget
+          strictContentTypeValidation: true
+        negativeCache:
+          enabled: true
+          timeToLive: 1440.0
+        cleanup:
+          policyName:
+            - cleanup-nuget-proxy
+    - name: nuget-hosted
+      online: true
+      recipeName: nuget-hosted
+      attributes:
+        storage:
+          blobStoreName: nuget
+          strictContentTypeValidation: true
+          writePolicy: ALLOW_ONCE
+    - name: nuget
+      online: true
+      recipeName: nuget-group
+      attributes:
+        storage:
+          blobStoreName: nuget
+          strictContentTypeValidation: true
+        group:
+          memberNames:
+            - "nuget-hosted"
+            - "nuget-proxy"
