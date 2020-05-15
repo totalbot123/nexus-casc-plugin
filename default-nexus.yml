@@ -83,6 +83,14 @@ repository:
         blobStoreQuotaConfig:
           quotaLimitBytes: 10240000000
           quotaType: spaceUsedQuota
+    - name: pypi
+      type: File
+      attributes:
+        file:
+          path: pypi
+        blobStoreQuotaConfig:
+          quotaLimitBytes: 10240000000
+          quotaType: spaceUsedQuota
   pruneCleanupPolicies: true
   cleanupPolicies:
     - name: cleanup-docker-proxy
@@ -102,6 +110,11 @@ repository:
         lastDownloaded: 864000
     - name: cleanup-nuget-proxy
       format: nuget
+      notes: ''
+      criteria:
+        lastDownloaded: 864000
+    - name: cleanup-pypi-proxy
+      format: pypi
       notes: ''
       criteria:
         lastDownloaded: 864000
@@ -310,3 +323,45 @@ repository:
           memberNames:
             - "nuget-hosted"
             - "nuget-proxy"
+
+    - name: pypi-proxy
+      online: true
+      recipeName: pypi-proxy
+      attributes:
+        proxy:
+          remoteUrl: https://pypi.org/
+          contentMaxAge: -1.0
+          metadataMaxAge: 1440.0
+        httpclient:
+          blocked: false
+          autoBlock: true
+          connection:
+            useTrustStore: false
+        storage:
+          blobStoreName: pypi
+          strictContentTypeValidation: true
+        negativeCache:
+          enabled: true
+          timeToLive: 1440.0
+        cleanup:
+          policyName:
+            - cleanup-pypi-proxy
+    - name: pypi-hosted
+      online: true
+      recipeName: pypi-hosted
+      attributes:
+        storage:
+          blobStoreName: pypi
+          strictContentTypeValidation: true
+          writePolicy: ALLOW_ONCE
+    - name: pypi-group
+      online: true
+      recipeName: pypi-group
+      attributes:
+        storage:
+          blobStoreName: pypi
+          strictContentTypeValidation: true
+        group:
+          memberNames:
+            - "pypi-hosted"
+            - "pypi-proxy"
