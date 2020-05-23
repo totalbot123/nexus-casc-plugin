@@ -9,7 +9,7 @@ capabilities:
   - type: OutreachManagementCapability
     enabled: false
 security:
-  anonymousAccess: false
+  anonymousAccess: true
   pruneUsers: true
   realms:
     - name: "DockerToken"
@@ -19,6 +19,29 @@ security:
     - name: "NuGetApiKey"
       enabled: true
   roles:
+    - id: repository-read-docker
+      enabled: true
+      source: default
+      name: repository-read-docker
+      description: "Docker Anonymous Access for public proxy / group repositories"
+      privileges:
+        - nx-healthcheck-read
+        - nx-repository-view-docker-docker-browse
+        - nx-repository-view-docker-docker-proxy-browse
+        - nx-repository-view-docker-docker-proxy-read
+        - nx-repository-view-docker-docker-read
+        - nx-search-read
+    - id: repository-read-all
+      enabled: true
+      source: default
+      name: repository-read-all
+      description: "Read All permission for repositories"
+      privileges:
+        - nx-apikey-all
+        - nx-healthcheck-read
+        - nx-repository-view-*-*-browse
+        - nx-repository-view-*-*-read
+        - nx-search-read
     - id: repository-write-all
       enabled: true
       source: default
@@ -30,12 +53,21 @@ security:
         - nx-repository-view-*-*-*
         - nx-search-read
   users:
+    - username: anonymous
+      firstName: Anonymous
+      lastName: User
+      password: anonymous
+      updateExistingPassword: false
+      email: anonymous@example.org
+      roles:
+        - source: "default"
+          role: repository-read-docker
     - username: johndoe
       firstName: John
       lastName: Doe
       password: "${file:/run/secrets/password_johndoe}"
       updateExistingPassword: true
-      email: johndoe@exmaple.org
+      email: johndoe@example.org
       roles:
         - source: "default"
           role: nx-admin
@@ -44,7 +76,7 @@ security:
       lastName: Doe
       password: changeme
       updateExistingPassword: false
-      email: janedoe@exmaple.org
+      email: janedoe@example.org
       roles:
         - source: "default"
           role: repository-write-all
@@ -125,12 +157,12 @@ repository:
       recipeName: docker-hosted
       attributes:
         docker:
-          forceBasicAuth: true
-          v1Enabled: false
+          forceBasicAuth: true  # Do not permit anonymous access to this repository
+          v1Enabled: true
         storage:
           blobStoreName: docker
           strictContentTypeValidation: true
-          writePolicy: ALLOW_ONCE
+          writePolicy: ALLOW
         cleanup:
           policyName:
             - None
@@ -139,14 +171,17 @@ repository:
       recipeName: docker-proxy
       attributes:
         docker:
-          forceBasicAuth: true
+          forceBasicAuth: false  # Allow anonymous access
           v1Enabled: true
         proxy:
           remoteUrl: https://registry-1.docker.io
           contentMaxAge: -1.0
           metadataMaxAge: 1440.0
         dockerProxy:
-          indexType: REGISTRY
+          indexType: HUB
+          cacheForeignLayers: true
+          foreignLayerUrlWhitelist:
+            - '.*'
         httpclient:
           blocked: false
           autoBlock: true
@@ -168,8 +203,8 @@ repository:
       recipeName: docker-group
       attributes:
         docker:
-          forceBasicAuth: true
-          v1Enabled: false
+          forceBasicAuth: false  # Each repo uses its own setting
+          v1Enabled: true
         storage:
           blobStoreName: docker
           strictContentTypeValidation: true
