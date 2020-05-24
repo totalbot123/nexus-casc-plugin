@@ -111,16 +111,16 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
             applyProxyConfig(core);
         }
 
-        ConfigSecurity security = config.getSecurity();
-        if (security != null) {
-            applySecurityConfig(security);
-        }
-
         baseUrlManager.detectAndHoldUrl();
 
         ConfigRepository repository = config.getRepository();
         if (repository != null) {
             applyRepositoryConfig(repository);
+        }
+
+        ConfigSecurity security = config.getSecurity();
+        if (security != null) {
+            applySecurityConfig(security);
         }
 
         List<ConfigCapability> capabilities = config.getCapabilities();
