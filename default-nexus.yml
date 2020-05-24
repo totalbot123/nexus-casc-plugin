@@ -18,6 +18,16 @@ security:
       enabled: true
     - name: "NuGetApiKey"
       enabled: true
+  privileges:
+    - id: system-repository-admin-docker-docker-proxy-update
+      enabled: true
+      name: system-repository-admin-docker-docker-proxy-update
+      description: Permit update to docker-proxy repository configuration
+      type: repository-admin
+      properties:
+        format: docker
+        repository: docker-proxy
+        actions: read,update
   roles:
     - id: repository-read-docker
       enabled: true

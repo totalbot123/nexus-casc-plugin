@@ -24,6 +24,8 @@ import org.sonatype.nexus.security.SecurityApi;
 import org.sonatype.nexus.security.SecuritySystem;
 import org.sonatype.nexus.security.authz.AuthorizationManager;
 import org.sonatype.nexus.security.authz.NoSuchAuthorizationManagerException;
+import org.sonatype.nexus.security.privilege.NoSuchPrivilegeException;
+import org.sonatype.nexus.security.privilege.Privilege;
 import org.sonatype.nexus.security.realm.RealmManager;
 import org.sonatype.nexus.security.role.NoSuchRoleException;
 import org.sonatype.nexus.security.role.Role;
@@ -43,6 +45,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.PrivilegedAction;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -410,14 +413,66 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
             security.getRealms().forEach(realm -> {
                 if (realm.getEnabled() != null) {
                     if (realm.getEnabled()) {
+                        log.info("Enabling realm {}", realm.getName());
                         realmManager.enableRealm(realm.getName(), true);
                     } else {
+                        log.info("Disabling realm {}", realm.getName());
                         realmManager.disableRealm(realm.getName());
                     }
                 } else {
                     log.warn("Passing a realm with enabled: null doesn't make sense...");
                 }
             });
+        }
+
+        if (security.getPrivileges() != null) {
+            List<ConfigSecurityPrivilege> privileges = security.getPrivileges();
+
+            try {
+                AuthorizationManager authManager = securitySystem.getAuthorizationManager("default");
+
+                for (ConfigSecurityPrivilege p : privileges) {
+                    if (p.isEnabled()) {
+                        Privilege tmpPrivilege;
+                        Boolean update = false;
+                        try {
+                            tmpPrivilege = authManager.getPrivilege(p.getId());
+                            update = true;
+                            tmpPrivilege.setName(p.getName());
+                            tmpPrivilege.setDescription(p.getDescription());
+                            tmpPrivilege.setType(p.getType());
+                            tmpPrivilege.setProperties(p.getProperties());
+                            tmpPrivilege.setReadOnly(p.getReadOnly());
+                        } catch (NoSuchPrivilegeException e) {
+                            tmpPrivilege = new Privilege(
+                                    p.getId(),
+                                    p.getName(),
+                                    p.getDescription(),
+                                    p.getType(),
+                                    p.getProperties(),
+                                    p.getReadOnly()
+                            );
+                        }
+
+                        try {
+                            if (update) {
+                                log.info("Updating privilege {}", tmpPrivilege.getId());
+                                tmpPrivilege = authManager.updatePrivilege(tmpPrivilege);
+                            } else {
+                                log.info("Creating privilege {}", tmpPrivilege.getId());
+                                tmpPrivilege = authManager.addPrivilege(tmpPrivilege);
+                            }
+                        } catch (RuntimeException e) {
+                            log.error("Failed to create/update permission {}", p.getId(), e);
+                        }
+                    } else {
+                        log.info("Deleting privilege {}", p.getId());
+                        authManager.deletePrivilege(p.getId());
+                    }
+                }
+            } catch (NoSuchAuthorizationManagerException e) {
+                log.error("AuthorizationManager {} does not exist.", "default", e);
+            }
         }
 
         if (security.getRoles() != null) {
@@ -431,7 +486,7 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
                             throw new NotWritableException("AuthorizationManager: " + source);
                         List<ConfigSecurityRole> roles = security.getRoles().stream().filter(p -> p.getSource().contentEquals(source)).collect(Collectors.toList());
                         if (roles != null) {
-                            roles.forEach(r -> {
+                            for (ConfigSecurityRole r : roles) {
                                 if (r.isEnabled()) {
                                     Role tmpRole;
                                     Boolean update = false;
@@ -468,9 +523,10 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
                                         log.error("Failed to create/update role {}", r.getId(), e);
                                     }
                                 } else {
+                                    log.info("Deleting role {}", r.getId());
                                     authManager.deleteRole(r.getId());
                                 }
-                            });
+                            }
                         }
                     } catch (NoSuchAuthorizationManagerException e) {
                         log.error("AuthorizationManager {} does not exist.", source, e);
