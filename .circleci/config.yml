@@ -4,7 +4,7 @@ version: 2.1
 executors:
   executor:
     docker:
-      - image: circleci/openjdk:8-jdk-buster
+      - image: cimg/openjdk:8.0
     working_directory: ~/repo
 
 jobs:
