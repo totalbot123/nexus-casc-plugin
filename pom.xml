@@ -5,26 +5,25 @@
     <parent>
         <groupId>org.sonatype.nexus.plugins</groupId>
         <artifactId>nexus-plugins</artifactId>
-        <version>3.23.0-03</version>
+        <version>3.24.0-02</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.weareadaptive.nexus</groupId>
     <artifactId>nexus-casc-plugin</artifactId>
-    <version>3.23.0-03</version>
+    <version>3.24.0-02</version>
     <packaging>bundle</packaging>
 
     <properties>
-        <nexus.docker.version>3.23.0</nexus.docker.version>
+        <nexus.docker.version>3.24.0</nexus.docker.version>
 
         <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
         <build-helper-maven-plugin.version>3.1.0</build-helper-maven-plugin.version>
-        <docker-compose-maven-plugin.version>3.0.0</docker-compose-maven-plugin.version>
+        <docker-compose-maven-plugin.version>4.0.0</docker-compose-maven-plugin.version>
 
         <snakeyaml.version>1.26</snakeyaml.version>
-        <aws-sdk.version>2.11.5</aws-sdk.version>
 
-        <junit-jupiter.version>5.6.1</junit-jupiter.version>
+        <junit-jupiter.version>5.6.2</junit-jupiter.version>
     </properties>
 
     <dependencies>
