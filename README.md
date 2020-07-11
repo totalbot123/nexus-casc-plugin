@@ -110,6 +110,27 @@ repository:
         blobStoreQuotaConfig:
           quotaLimitBytes: 10240000000
           quotaType: spaceUsedQuota
+    - name: main
+      type: S3
+      attributes:
+        s3:
+          bucket: 'some-bucket' # (mandatory) AWS bucket
+          prefix: '/nexus/'    # (optional) prefix for structure in bucket
+          # Nexus uses default S3 provider chain so options are:
+          # 1. Usual AWS_PROFILE, AWS_ACCESS_KEY etc. environment variables
+          # 2. IAM Instance Profile with appropriate IAM role and policy (see Nexus docs)
+          # 3. Explicit credentials (below)
+          accessKeyId: 'some_key' # (optional) AWS access key Id
+          secretAccessKey: 'some_secret_key'  # (optional) AWS secret access key
+          sessionToken: 'some_session_token'  # (optional) AWS session token
+          assumeRole: 'power-users' # (optional) custom IAM role to assume
+          region: 'eu-west-1'   # (optional) AWS region
+          endpoint: 'https://s3.custom-endpoint.somewhere/'
+          expiration: '3'  # (optional) days, default=3
+          signertype: none # (optional) 'one of none(default)|S3SignerType|AWSS3V4SignerType'
+          forcepathstyle: false # (optional) 'false(default)|true'
+          encryption_type: DEFAULT # (optional) 'one of DEFAULT(default)|s3ManagedEncryption|kmsManagedEncryption'
+          encryption_key: 'aws/s3' # (required kmsManagedEncryption only) AWS KMS Key Id or KMS Key Alias
   pruneCleanupPolicies: true # True to delete cleanup policies not present in this configuration file
   cleanupPolicies:
     - name: cleanup-maven-proxy

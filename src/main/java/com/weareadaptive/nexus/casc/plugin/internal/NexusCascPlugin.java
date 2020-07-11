@@ -7,6 +7,7 @@ import org.sonatype.nexus.CoreApi;
 import org.sonatype.nexus.blobstore.api.BlobStore;
 import org.sonatype.nexus.blobstore.api.BlobStoreConfiguration;
 import org.sonatype.nexus.blobstore.api.BlobStoreManager;
+import org.sonatype.nexus.blobstore.file.FileBlobStore;
 import org.sonatype.nexus.capability.CapabilityIdentity;
 import org.sonatype.nexus.capability.CapabilityReference;
 import org.sonatype.nexus.capability.CapabilityRegistry;
@@ -219,9 +220,10 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
     private void applyRepositoryConfig(ConfigRepository repository) {
         if (repository.getBlobStores() != null) {
             repository.getBlobStores().forEach(configBlobStore -> {
-                if (configBlobStore.getAttributes().get("file") == null
+                if (configBlobStore.getType().equals(FileBlobStore.TYPE) &&
+                        (configBlobStore.getAttributes().get("file") == null
                         || configBlobStore.getAttributes().get("file").get("path") == null
-                        || !(configBlobStore.getAttributes().get("file").get("path") instanceof String)) {
+                        || !(configBlobStore.getAttributes().get("file").get("path") instanceof String))) {
                     log.error(".attributes.file.path of blob store {} must be a string!", configBlobStore.getName());
                     return;
                 }
