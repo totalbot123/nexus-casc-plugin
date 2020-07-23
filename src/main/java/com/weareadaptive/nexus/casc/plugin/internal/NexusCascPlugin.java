@@ -233,7 +233,8 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
                 if (existingBlobStore != null) {
                     BlobStoreConfiguration existingBlobStoreConfig = existingBlobStore.getBlobStoreConfiguration();
 
-                    if (!configBlobStore.getAttributes().get("file").get("path").equals(
+                    if (configBlobStore.getType().equals(FileBlobStore.TYPE) &&
+                        !configBlobStore.getAttributes().get("file").get("path").equals(
                             existingBlobStoreConfig.getAttributes().get("file").get("path")
                     )) {
                         log.error("Can not update .attributes.file.path for blob stores. Blob store {}, current path: {}, new path {}",
