@@ -135,6 +135,11 @@ repository:
           quotaType: spaceUsedQuota
   pruneCleanupPolicies: true
   cleanupPolicies:
+    - name: cleanup-everything
+      format: ALL_FORMATS
+      notes: ''
+      criteria:
+        lastDownloaded: 864000
     - name: cleanup-docker-proxy
       format: docker
       notes: ''
