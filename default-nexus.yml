@@ -133,6 +133,14 @@ repository:
         blobStoreQuotaConfig:
           quotaLimitBytes: 10240000000
           quotaType: spaceUsedQuota
+    - name: rubygems
+      type: File
+      attributes:
+        file:
+          path: rubygems
+        blobStoreQuotaConfig:
+          quotaLimitBytes: 10240000000
+          quotaType: spaceUsedQuota
     - name: pypi
       type: File
       attributes:
@@ -173,6 +181,11 @@ repository:
       notes: ''
       criteria:
         lastDownloaded: 864000
+    - name: cleanup-rubygems-proxy
+      format: rubygems
+      notes: ''
+      criteria:
+        lastDownloaded: 864000
     - name: cleanup-pypi-proxy
       format: pypi
       notes: ''
@@ -180,6 +193,7 @@ repository:
         lastDownloaded: 864000
   pruneRepositories: true
   repositories:
+    # https://help.sonatype.com/repomanager3/formats/docker-registry
     - name: docker-hosted
       online: true
       recipeName: docker-hosted
@@ -242,7 +256,7 @@ repository:
           memberNames:
             - "docker-hosted"
             - "docker-proxy"
-    # Go support: https://help.sonatype.com/repomanager3/formats/go-repositories
+    # https://help.sonatype.com/repomanager3/formats/go-repositories
     # GOPROXY should point to the _group_ repository URL
     # golang requires anonymous access for this to work
     - name: golang-gonexus-proxy
@@ -285,6 +299,7 @@ repository:
         group:
           memberNames:
             - "golang-gonexus-proxy"
+    # https://help.sonatype.com/repomanager3/formats/maven-repositories
     - name: maven-snapshots
       online: true
       recipeName: maven2-hosted
@@ -344,6 +359,7 @@ repository:
             - "maven-central"
         storage:
           blobStoreName: maven
+    # https://help.sonatype.com/repomanager3/formats/npm-registry
     - name: npm-hosted
       online: true
       recipeName: npm-hosted
@@ -390,6 +406,8 @@ repository:
           memberNames:
             - "npm-proxy"
             - "npm-hosted"
+    # NuGet Support: https://help.sonatype.com/repomanager3/formats/nuget-repositories
+    # v3 URLs must be used if v3 proxy is present
     - name: nuget-proxy
       online: true
       recipeName: nuget-proxy
@@ -431,7 +449,7 @@ repository:
           memberNames:
             - "nuget-hosted"
             - "nuget-proxy"
-
+    # https://help.sonatype.com/repomanager3/formats/pypi-repositories
     - name: pypi-proxy
       online: true
       recipeName: pypi-proxy
@@ -473,3 +491,45 @@ repository:
           memberNames:
             - "pypi-hosted"
             - "pypi-proxy"
+    # https://help.sonatype.com/repomanager3/formats/rubygems-repositories
+    - name: rubygems-proxy
+      online: true
+      recipeName: rubygems-proxy
+      attributes:
+        proxy:
+          remoteUrl: https://rubygems.org/
+          contentMaxAge: -1.0
+          metadataMaxAge: 1440.0
+        httpclient:
+          blocked: false
+          autoBlock: true
+          connection:
+            useTrustStore: false
+        storage:
+          blobStoreName: rubygems
+          strictContentTypeValidation: true
+        negativeCache:
+          enabled: true
+          timeToLive: 1440.0
+        cleanup:
+          policyName:
+            - cleanup-rubygems-proxy
+    - name: rubygems-hosted
+      online: true
+      recipeName: rubygems-hosted
+      attributes:
+        storage:
+          blobStoreName: rubygems
+          strictContentTypeValidation: true
+          writePolicy: ALLOW_ONCE
+    - name: rubygems-group
+      online: true
+      recipeName: rubygems-group
+      attributes:
+        storage:
+          blobStoreName: rubygems
+          strictContentTypeValidation: true
+        group:
+          memberNames:
+            - "rubygems-hosted"
+            - "rubygems-proxy"
