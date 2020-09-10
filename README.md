@@ -8,7 +8,7 @@ This plugin allows to specify a YAML file to configure a Nexus instance on start
 
 Forked from: https://github.com/sventschui/nexus-casc-plugin
 
-The original provider did not respond to PRs
+The original provider was unable to maintain the project
 
 ### Changes from the fork
 
@@ -19,11 +19,28 @@ The original provider did not respond to PRs
 * Basic CI has been added
 * Releases are currently pushed to our private repository, this may change in the future
 
+## Building
+
+Requires:
+* Java 8 JDK (OpenJDK is fine)
+* Maven (3.6.3 or higher preferred)
+* docker-compose (only if running the integration tests)
+
+To just build the `.kar` archive:
+```bash
+mvn package
+```
+
+To build the `.kar` archive and execute the (limited!) integration tests via `docker-compose`:
+```bash
+mvn verify
+```
+
 ## Usage
 
 **Warning**: Use the project version that matches your Nexus version.
 This is because the project is tied to specific version of the Nexus API and there is no guarantee
-the API remains consistent.
+the API remains consistent (although it usually does).
 
 Deploy the .kar archive using the upstream `sonatype/nexus3` image in the `/opt/sonatype/nexus/deploy/` directory.
 The plugin will be automatically installed on startup.
