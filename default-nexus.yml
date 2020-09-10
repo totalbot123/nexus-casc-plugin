@@ -101,6 +101,14 @@ repository:
         blobStoreQuotaConfig:
           quotaLimitBytes: 10240000000
           quotaType: spaceUsedQuota
+    - name: golang
+      type: File
+      attributes:
+        file:
+          path: golang
+        blobStoreQuotaConfig:
+          quotaLimitBytes: 10240000000
+          quotaType: spaceUsedQuota
     - name: maven
       type: File
       attributes:
@@ -142,6 +150,11 @@ repository:
         lastDownloaded: 864000
     - name: cleanup-docker-proxy
       format: docker
+      notes: ''
+      criteria:
+        lastDownloaded: 864000
+    - name: cleanup-golang-proxy
+      format: go
       notes: ''
       criteria:
         lastDownloaded: 864000
@@ -229,6 +242,49 @@ repository:
           memberNames:
             - "docker-hosted"
             - "docker-proxy"
+    # Go support: https://help.sonatype.com/repomanager3/formats/go-repositories
+    # GOPROXY should point to the _group_ repository URL
+    # golang requires anonymous access for this to work
+    - name: golang-gonexus-proxy
+      online: true
+      recipeName: go-proxy
+      attributes:
+        golang:
+          forceBasicAuth: false  # Allow anonymous access
+          v1Enabled: true
+        proxy:
+          remoteUrl: https://gonexus.dev
+          contentMaxAge: -1.0
+          metadataMaxAge: 1440.0
+        httpclient:
+          blocked: false
+          autoBlock: true
+          connection:
+            useTrustStore: false
+        storage:
+          blobStoreName: golang
+          strictContentTypeValidation: true
+        routingRules:
+          routingRuleId: null
+        negativeCache:
+          enabled: true
+          timeToLive: 1440.0
+        cleanup:
+          policyName:
+            - cleanup-golang-proxy
+    - name: golang-group
+      online: true
+      recipeName: go-group
+      attributes:
+        golang:
+          forceBasicAuth: false  # Each repo uses its own setting
+          v1Enabled: true
+        storage:
+          blobStoreName: golang
+          strictContentTypeValidation: true
+        group:
+          memberNames:
+            - "golang-gonexus-proxy"
     - name: maven-snapshots
       online: true
       recipeName: maven2-hosted
