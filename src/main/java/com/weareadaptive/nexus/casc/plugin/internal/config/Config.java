@@ -7,6 +7,7 @@ public class Config {
     private ConfigRepository repository;
     private ConfigSecurity security;
     private List<ConfigCapability> capabilities;
+    private List<ConfigTaskSchedule> taskSchedules;
 
     public ConfigCore getCore() {
         return core;
@@ -39,4 +40,8 @@ public class Config {
     public void setCapabilities(List<ConfigCapability> capabilities) {
         this.capabilities = capabilities;
     }
+
+    public List<ConfigTaskSchedule> getTaskSchedules() { return taskSchedules; }
+
+    public void setTaskSchedules(List<ConfigTaskSchedule> taskSchedules) { this.taskSchedules = taskSchedules; }
 }

@@ -533,3 +533,14 @@ repository:
           memberNames:
             - "rubygems-hosted"
             - "rubygems-proxy"
+taskSchedules:
+  - task:
+      name: 'Docker Incomplete Uploads'
+      typeName: 'Docker - Delete incomplete uploads'
+      typeId: 'repository.docker.upload-purge'
+      alertEmail: 'alerts@example.com'
+      enabled: true  # default
+      notificationCondition: FAILURE  # or SUCCESS_FAILURE
+    schedule:
+      type: 'daily'
+      startAt: '2020-01-01T00:00:00.000Z'

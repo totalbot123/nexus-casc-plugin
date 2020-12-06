@@ -21,6 +21,9 @@ import org.sonatype.nexus.common.stateguard.StateGuardLifecycleSupport;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.config.Configuration;
 import org.sonatype.nexus.repository.manager.RepositoryManager;
+import org.sonatype.nexus.scheduling.*;
+import org.sonatype.nexus.scheduling.schedule.Schedule;
+import org.sonatype.nexus.scheduling.schedule.ScheduleFactory;
 import org.sonatype.nexus.security.SecurityApi;
 import org.sonatype.nexus.security.SecuritySystem;
 import org.sonatype.nexus.security.authz.AuthorizationManager;
@@ -46,6 +49,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -65,6 +70,7 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
     private final BlobStoreManager blobStoreManager;
     private final RealmManager realmManager;
     private final CapabilityRegistry capabilityRegistry;
+    private final TaskScheduler taskScheduler;
 
     @Inject
     public NexusCascPlugin(
@@ -77,7 +83,8 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
             final RepositoryManager repositoryManager,
             final BlobStoreManager blobStoreManager,
             final RealmManager realmManager,
-            final CapabilityRegistry capabilityRegistry) throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+            final CapabilityRegistry capabilityRegistry,
+            final TaskScheduler taskScheduler) throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         this.baseUrlManager = baseUrlManager;
         this.coreApi = coreApi;
         this.securityApi = securityApi;
@@ -88,6 +95,7 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
         this.repositoryManager = repositoryManager;
         this.realmManager = realmManager;
         this.capabilityRegistry = capabilityRegistry;
+        this.taskScheduler = taskScheduler;
     }
 
     @Override
@@ -130,6 +138,12 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
         if (capabilities != null) {
             applyCapabilitiesConfig(capabilities);
         }
+
+        List<ConfigTaskSchedule> taskSchedules = config.getTaskSchedules();
+        log.info("TaskSchedules: {}", taskSchedules);
+        //if (taskSchedules != null ){
+            applySchedules(taskSchedules);
+        //}
     }
 
     private void applyBaseUrlConfig(ConfigCore core) {
@@ -620,5 +634,113 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
         } else if (security.getPruneUsers() != null && security.getPruneUsers()) {
             log.error("security.pruneUsers has no effect when not specifying any users!");
         }
+    }
+
+    private void applySchedules(List<ConfigTaskSchedule> taskSchedules) {
+        TaskFactory taskFactory = taskScheduler.getTaskFactory();
+        ScheduleFactory scheduleFactory = taskScheduler.getScheduleFactory();
+
+        // Exclude task types that aren't exposed and visible
+        List<TaskDescriptor> taskDescriptors = taskFactory.getDescriptors().stream()
+            .filter(x -> x.isExposed() && x.isVisible())
+            .sorted(Comparator.comparing(x -> x.getName()))
+        .collect(Collectors.toList());
+        taskDescriptors.forEach(x -> log.info("Task Descriptor - Name: {}, ID: {}", x.getName(), x.getId()));
+
+        // Exclude tasks that aren't exposed and visible
+        List<TaskInfo> taskInfos = taskScheduler.listsTasks().stream()
+            .filter(x -> x.getConfiguration().isExposed() && x.getConfiguration().isVisible())
+            .collect(Collectors.toList());
+        taskInfos.forEach(x -> log.info("Tasks: {}", x));
+
+        if (taskSchedules != null && !taskSchedules.isEmpty()) {
+            for (ConfigTaskSchedule taskSchedule : taskSchedules) {
+                TaskConfiguration searchConfig = convertTaskForSearch(taskSchedule.getTask());
+                TaskInfo existingTask = taskScheduler.getTaskByTypeId(searchConfig.getTypeId(), searchConfig.asMap());
+                if (existingTask == null) {
+                    // try just by type Id
+                    existingTask = taskScheduler.getTaskByTypeId(searchConfig.getTypeId());
+                }
+                if (existingTask != null) {
+                    log.info("Existing Task found: {}", existingTask.getName());
+                    TaskConfiguration existingConfig = existingTask.getConfiguration();
+                    ConfigTask configTask = taskSchedule.getTask();
+                    existingConfig.setEnabled(configTask.isEnabled());
+                    existingConfig.setAlertEmail(configTask.getAlertEmail());
+                    existingConfig.setNotificationCondition(TaskNotificationCondition.valueOf(configTask.getNotificationCondition()));
+
+                    Schedule schedule = existingTask.getSchedule();
+                    ConfigSchedule scheduleConfig = taskSchedule.getSchedule();
+                    if (schedule.getType() != scheduleConfig.getType()) {
+                        // sadly this is one-to-one map
+                        switch (scheduleConfig.getType()) {
+                        }
+                        // completely change the schedule type
+                        log.warn("Schedule types are different for task (name,Id): {},{}", existingTask.getName(), existingTask.getId());
+                    }
+                    taskScheduler.scheduleTask(existingConfig, existingTask.getSchedule());
+                } else {
+                    // New task
+                    ConfigTask taskConfig = taskSchedule.getTask();
+                    ConfigSchedule scheduleConfig = taskSchedule.getSchedule();
+                    log.info("Creating Task: {}", taskConfig.getName());
+                    taskScheduler.scheduleTask(convertTaskFull(taskConfig), null);
+                }
+            }
+        }
+    }
+
+    private TaskConfiguration convertTaskForSearch(ConfigTask task) {
+        TaskConfiguration taskConfig = taskScheduler.createTaskConfigurationInstance(task.getTypeId());
+        taskConfig.setExposed(true);
+        taskConfig.setVisible(true);
+
+        taskConfig.setName(task.getName());
+
+        return taskConfig;
+    }
+
+    private TaskConfiguration convertTaskFull(ConfigTask task) {
+        TaskConfiguration taskConfig = convertTaskForSearch(task);
+
+        // Extra "known" properties
+        taskConfig.setEnabled(task.isEnabled());
+        taskConfig.setAlertEmail(task.getAlertEmail());
+
+        return taskConfig;
+    }
+
+    private Schedule configScheduleToSchedule(ScheduleFactory factory, ConfigSchedule config) throws ParseException {
+        DateFormat dateFormat = DateFormat.getDateTimeInstance();
+        Schedule schedule;
+        switch (config.getType()) {
+            case "manual": {
+                schedule = factory.manual();
+            }
+            case "now": {
+                schedule = factory.now();
+            }
+            case "once": {
+                schedule = factory.once(dateFormat.parse(config.getProperties().get("startAt")));
+            }
+            case "hourly": {
+                schedule = factory.hourly(dateFormat.parse(config.getProperties().get("startAt")));
+            }
+            case "daily": {
+                schedule = factory.daily(dateFormat.parse(config.getProperties().get("startAt")));
+            }
+            case "weekly": {
+                schedule = factory.weekly(dateFormat.parse(config.getProperties().get("startAt")), config.getProperties().get("daysToRun"));
+            }
+            case "monthly": {
+                schedule = factory.monthly(dateFormat.parse(config.getProperties().get("startAt")), config.getProperties().get("daysToRun"));
+            }
+            case "cron": {
+                schedule = factory.cron(dateFormat.parse(config.getProperties().get("startAt")), config.getProperties().get(""), config.getProperties().get(""));
+            }
+            default: ;
+        }
+
+        return schedule;
     }
 }
