@@ -1,10 +1,24 @@
 ---
 core:
   baseUrl: ${BASE_URL:""}
-  httpProxy: ${HTTP_PROXY:""}
-  httpsProxy: ${HTTPS_PROXY:""}
-  # TODO: allow to have a list here...
-  nonProxyHosts: ${NO_PROXY:""}
+  userAgentCustomization: "CasC test"
+  connectionTimeout: 60
+  connectionRetryAttempts: 10
+  httpProxy:
+    host: proxy.internal.lan
+    port: 3128
+    username: nexus-user
+    password: ${PROXY_PASSWORD}
+  httpsProxy:
+    host: proxy.internal.lan
+    port: 3128
+    username: nexus-user
+    password: ${PROXY_PASSWORD}
+    ntlmHost: dc.internal.lan
+    ntlmDomain: internal.lan
+  nonProxyHosts:
+    - host1.internal.lan
+    - host2.internal.lan
 capabilities:
   - type: OutreachManagementCapability
     enabled: false

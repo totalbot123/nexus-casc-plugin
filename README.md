@@ -51,6 +51,17 @@ The format of the YAML file is documented below.
 
 Start Nexus as usual.
 
+## Local testing
+
+There is a `docker-compose.yml` file with all the necessary to test this. The test admin user is `johndoe` and its password
+is located in the `password_johndoe` file. The YAML configuration is located in `default-nexus.yml`. It has a non-working
+proxy configuration just to test its configuration. Removing `httpProxy` and/or `httpsProxy` entirely will also clear the relevant
+proxy settings on the next boot.
+```shell
+mvn package
+docker-compose run nexus
+```
+
 ## Configuration file
 
 You can find an example configuration file [here](https://github.com/AdaptiveConsulting/nexus-casc-plugin/blob/master/default-nexus.yml).
@@ -70,9 +81,26 @@ The configuration file supports following options:
 ```yaml
 core:
   baseUrl: "" # Nexus base URL
-  httpProxy: "" # HTTP proxy (Note: Basic Auth and NTLM are not yet supported, file an issue if you require this)
-  httpsProxy: ""  # HTTP proxy
-  nonProxyHosts: "" # Comma separated list of hosts not to be queried through a proxy
+  userAgentCustomization: ""
+  connectionTimeout: 0 # ignored if 0
+  connectionRetryAttempts: 0 # ignored if 0
+  httpProxy: # HTTP proxy
+    host: ""
+    port: 80 # defaults to 80
+    username: ""
+    password: ""
+    ntlmHost: ""
+    ntlmDomain: ""
+  httpsProxy: # HTTPs proxy
+    host: ""
+    port: 80 # still defaults to 80 because Nexus has no way to know that it needs to use TLS for the proxy itself
+    username: ""
+    password: ""
+    ntlmHost: ""
+    ntlmDomain: ""
+  nonProxyHosts: # list of hosts not to be queried through a proxy
+    - "host1"
+    - "hostn..."
 ```
 
 #### Security

@@ -40,6 +40,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -111,7 +112,7 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
         ConfigCore core = config.getCore();
         if (core != null) {
             applyBaseUrlConfig(core);
-            applyProxyConfig(core);
+            applyHTTPConfig(core);
         }
 
         baseUrlManager.detectAndHoldUrl();
@@ -139,41 +140,71 @@ public class NexusCascPlugin extends StateGuardLifecycleSupport {
             coreApi.baseUrl(baseUrl);
         }
     }
-
-    private void applyProxyConfig(ConfigCore core) {
-        if (core.getHttpProxy() != null && !core.getHttpProxy().trim().isEmpty()) {
-            // TODO: support basic & ntlm auth
-            try {
-                String proxyUrlString = core.getHttpProxy().trim();
-                URL proxyUrl = new URL(proxyUrlString);
-                log.info("Setting httpProxy to {} {}", proxyUrl.getHost(), proxyUrl.getPort());
-                coreApi.httpProxy(proxyUrl.getHost(), proxyUrl.getPort());
-            } catch (MalformedURLException e) {
-                log.error("Failed to parse http proxy URL {}", core.getHttpProxy().trim(), e);
-            }
+    private void applyHTTPConfig(ConfigCore core) {
+        if (core.getUserAgentCustomization() != null){
+            coreApi.userAgentCustomization(core.getUserAgentCustomization());
+            log.info("UserAgent string set with "+core.getUserAgentCustomization());
         }
 
-        if (core.getHttpsProxy() != null && !core.getHttpsProxy().trim().isEmpty()) {
-            // TODO: support basic & ntlm auth
-            try {
-                String proxyUrlString = core.getHttpProxy().trim();
-                URL proxyUrl = new URL(proxyUrlString);
-                log.info("Setting httpsProxy to {} {}", proxyUrl.getHost(), proxyUrl.getPort());
-                coreApi.httpsProxy(proxyUrl.getHost(), proxyUrl.getPort());
-            } catch (MalformedURLException e) {
-                log.error("Failed to parse https proxy URL {}", core.getHttpsProxy().trim(), e);
-            }
+        if (core.getConnectionTimeout() > 0) {
+            coreApi.connectionTimeout(core.getConnectionTimeout());
+            log.info("HTTP connection timeout set to "+core.getConnectionTimeout()+" seconds");
         }
 
-        if (core.getNonProxyHosts() != null && !core.getNonProxyHosts().trim().isEmpty()) {
-            String noProxyHostsString = core.getNonProxyHosts().trim();
-            String[] noProxyHosts = Arrays.stream(noProxyHostsString.split(","))
+        if (core.getConnectionRetryAttempts() > 0) {
+            coreApi.connectionRetryAttempts(core.getConnectionRetryAttempts());
+            log.info("HTTP connection retry attempts set to "+core.getConnectionRetryAttempts()+" times");
+        }
+
+        applyHttpProxyConfig(core.getHttpProxy(), false);
+        applyHttpProxyConfig(core.getHttpsProxy(), true);
+
+        if (core.getNonProxyHosts() != null && core.getNonProxyHosts().size() > 0) {
+            String[] noProxyHosts = core.getNonProxyHosts().stream()
                     .map(String::trim)
                     .filter(host -> !host.isEmpty())
                     .toArray(String[]::new);
 
             log.info("Setting nonProxyHosts to {}", String.join(",", noProxyHosts));
             coreApi.nonProxyHosts(noProxyHosts);
+        }
+    }
+
+    private void applyHttpProxyConfig(ConfigHttpProxy httpProxy, Boolean isHTTPs) {
+        String removeMessage = "No proxy defined, removing any existing "+(isHTTPs ? "HTTPs": "HTTP")+" proxy";
+        if (httpProxy != null){
+            if (httpProxy.getHost() != null){
+                int portNumber = httpProxy.getPort() > 0 ? httpProxy.getPort() : 80;
+                String protocol = isHTTPs ? "HTTPs" : "HTTP";
+                String message = protocol + " proxy "+ httpProxy.getHost()+":"+ portNumber+ " is set";
+                if (httpProxy.getUsername() != null && httpProxy.getNtlmHost() != null){
+                    if (isHTTPs)
+                        coreApi.httpsProxyWithNTLMAuth(httpProxy.getHost(), portNumber, httpProxy.getUsername(), httpProxy.getPassword(), httpProxy.getNtlmHost(), httpProxy.getNtlmDomain());
+                    else
+                        coreApi.httpProxyWithNTLMAuth(httpProxy.getHost(), portNumber, httpProxy.getUsername(), httpProxy.getPassword(), httpProxy.getNtlmHost(), httpProxy.getNtlmDomain());
+                    message += " with NTLM authentication";
+                } else if (httpProxy.getUsername() != null) {
+                    if (isHTTPs)
+                        coreApi.httpsProxyWithBasicAuth(httpProxy.getHost(), portNumber, httpProxy.getUsername(), httpProxy.getPassword());
+                    else
+                        coreApi.httpProxyWithBasicAuth(httpProxy.getHost(), portNumber, httpProxy.getUsername(), httpProxy.getPassword());
+                    message += " with basic authentication";
+                } else {
+                    if (isHTTPs)
+                        coreApi.httpsProxy(httpProxy.getHost(), portNumber);
+                    else
+                        coreApi.httpProxy(httpProxy.getHost(), portNumber);
+                }
+                log.info(message);
+            } else {
+                log.error("Missing proxy host name");
+            }
+        } else if (isHTTPs) {
+            coreApi.removeHTTPSProxy();
+            log.info(removeMessage);
+        } else {
+            coreApi.removeHTTPProxy();
+            log.info(removeMessage);
         }
     }
 

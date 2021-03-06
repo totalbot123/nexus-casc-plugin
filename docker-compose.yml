@@ -23,6 +23,8 @@ services:
       - '${NEXUS_UI_PORT}:8081'
       # - '18090:18090'
       # - '18091:18091'
+    expose:
+      - '${NEXUS_UI_PORT}'
     secrets:
       - password_johndoe
     ulimits:
