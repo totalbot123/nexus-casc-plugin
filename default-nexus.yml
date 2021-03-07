@@ -107,6 +107,14 @@ security:
 repository:
   pruneBlobStores: true
   blobStores:
+    - name: apt
+      type: File
+      attributes:
+        file:
+          path: apt
+        blobStoreQuotaConfig:
+          quotaLimitBytes: 10240000000
+          quotaType: spaceUsedQuota
     - name: docker
       type: File
       attributes:
@@ -147,6 +155,14 @@ repository:
         blobStoreQuotaConfig:
           quotaLimitBytes: 10240000000
           quotaType: spaceUsedQuota
+    - name: raw
+      type: File
+      attributes:
+        file:
+          path: raw
+        blobStoreQuotaConfig:
+          quotaLimitBytes: 10240000000
+          quotaType: spaceUsedQuota
     - name: rubygems
       type: File
       attributes:
@@ -163,10 +179,23 @@ repository:
         blobStoreQuotaConfig:
           quotaLimitBytes: 10240000000
           quotaType: spaceUsedQuota
+    - name: yum
+      type: File
+      attributes:
+        file:
+          path: yum
+        blobStoreQuotaConfig:
+          quotaLimitBytes: 10240000000
+          quotaType: spaceUsedQuota
   pruneCleanupPolicies: true
   cleanupPolicies:
     - name: cleanup-everything
       format: ALL_FORMATS
+      notes: ''
+      criteria:
+        lastDownloaded: 864000
+    - name: cleanup-apt-proxy
+      format: apt
       notes: ''
       criteria:
         lastDownloaded: 864000
@@ -195,18 +224,65 @@ repository:
       notes: ''
       criteria:
         lastDownloaded: 864000
-    - name: cleanup-rubygems-proxy
-      format: rubygems
-      notes: ''
-      criteria:
-        lastDownloaded: 864000
     - name: cleanup-pypi-proxy
       format: pypi
       notes: ''
       criteria:
         lastDownloaded: 864000
+    - name: cleanup-raw-proxy
+      format: raw
+      notes: ''
+      criteria:
+        lastDownloaded: 864000
+    - name: cleanup-rubygems-proxy
+      format: rubygems
+      notes: ''
+      criteria:
+        lastDownloaded: 864000
+    - name: cleanup-yum-proxy
+      format: yum
+      notes: ''
+      criteria:
+        lastDownloaded: 864000
   pruneRepositories: true
   repositories:
+    # https://help.sonatype.com/repomanager3/formats/apt-repositories
+    - name: apt-hosted
+      online: true
+      recipeName: apt-hosted
+      attributes:
+        apt:
+          distribution: focal
+        aptSigning:
+          keypair: "${file:/run/secrets/gpg_key_example}"
+          passphrase: "${file:/run/secrets/gpg_passphrase_example}"
+        storage:
+          blobStoreName: apt
+          strictContentTypeValidation: true
+          writePolicy: ALLOW_ONCE
+        cleanup:
+          policyName:
+            - None
+    - name: apt-ubuntu
+      online: true
+      recipeName: apt-proxy
+      attributes:
+        apt:
+          distribution: focal
+        aptSigning:
+          keypair: "${file:/run/secrets/gpg_key_example}"
+          passphrase: "${file:/run/secrets/gpg_passphrase_example}"
+        proxy:
+          contentMaxAge: -1
+          remoteUrl: https://archive.ubuntu.com/ubuntu/
+          metadataMaxAge: 1440
+        storage:
+          blobStoreName: apt
+          strictContentTypeValidation: true
+          writePolicy: ALLOW_ONCE
+        cleanup:
+          policyName:
+            - cleanup-apt-proxy
     # https://help.sonatype.com/repomanager3/formats/docker-registry
     - name: docker-hosted
       online: true
@@ -505,6 +581,47 @@ repository:
           memberNames:
             - "pypi-hosted"
             - "pypi-proxy"
+    # https://help.sonatype.com/repomanager3/formats/raw-repositories
+    - name: raw-hosted
+      online: true
+      recipeName: raw-hosted
+      attributes:
+        storage:
+          blobStoreName: raw
+          strictContentTypeValidation: true
+          writePolicy: ALLOW
+        cleanup:
+          policyName:
+            - None
+        # How to configure proprietary component - requires Nexus firewall
+        raw:
+          contentDisposition: ATTACHMENT  # or inline
+        component:
+          proprietaryComponents: true
+    - name: nodejs-dist
+      online: true
+      recipeName: raw-proxy
+      attributes:
+        raw:
+          contentDisposition: ATTACHMENT
+        proxy:
+          remoteUrl: https://nodejs.org/dist/
+          contentMaxAge: -1.0
+          metadataMaxAge: 1440.0
+        httpclient:
+          blocked: false
+          autoBlock: true
+          connection:
+            useTrustStore: false
+        storage:
+          blobStoreName: raw
+          strictContentTypeValidation: true
+        negativeCache:
+          enabled: true
+          timeToLive: 1440.0
+        cleanup:
+          policyName:
+            - cleanup-raw-proxy
     # https://help.sonatype.com/repomanager3/formats/rubygems-repositories
     - name: rubygems-proxy
       online: true
@@ -547,3 +664,65 @@ repository:
           memberNames:
             - "rubygems-hosted"
             - "rubygems-proxy"
+    # https://help.sonatype.com/repomanager3/formats/yum-repositories
+    # Please read the documentation around repodataDepth
+    - name: yum-hosted
+      online: true
+      recipeName: yum-hosted
+      attributes:
+        yum:
+          repodataDepth: 3
+          deployPolicy: STRICT  # PERMISSIVE for maven yum deployment
+        storage:
+          blobStoreName: yum
+          strictContentTypeValidation: true
+          writePolicy: ALLOW
+        cleanup:
+          policyName:
+            - None
+    - name: yum-centos
+      online: true
+      recipeName: yum-proxy
+      attributes:
+        yum:
+          repodataDepth: 3
+          deployPolicy: STRICT  # PERMISSIVE for maven yum deployment
+        yumSigning:
+          keypair: "${file:/run/secrets/gpg_key_example}"
+          passphrase: "${file:/run/secrets/gpg_passphrase_example}"
+        httpclient:
+          blocked: false
+          autoBlock: true
+          connection:
+            useTrustStore: false
+        negativeCache:
+          enabled: true
+          timeToLive: 1440.0
+        proxy:
+          contentMaxAge: -1
+          remoteUrl: http://mirror.centos.org/centos/
+          metadataMaxAge: 1440
+        storage:
+          blobStoreName: yum
+          strictContentTypeValidation: true
+          writePolicy: ALLOW_ONCE
+        cleanup:
+          policyName:
+            - cleanup-yum-proxy
+    - name: yum-group
+      online: true
+      recipeName: yum-group
+      attributes:
+        group:
+          memberNames:
+            - yum-hosted
+            - yum-centos
+        yumSigning:
+          keypair: "${file:/run/secrets/gpg_key_example}"
+          passphrase: "${file:/run/secrets/gpg_passphrase_example}"
+        storage:
+          blobStoreName: yum
+          strictContentTypeValidation: true
+        cleanup:
+          policyName:
+            - cleanup-yum-proxy

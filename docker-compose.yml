@@ -1,10 +1,14 @@
 ---
 # Useful for local debugging of the scripts.
-version: '3.7'
+version: '3.8'
 
 secrets:
   password_johndoe:
     file: ./password_johndoe
+  gpg_key_example:
+    file: ./gpg-example.key
+  gpg_passphrase_example:
+    file: ./gpg-example.passphrase
 
 services:
   nexus:
@@ -27,6 +31,8 @@ services:
       - '${NEXUS_UI_PORT}'
     secrets:
       - password_johndoe
+      - gpg_key_example
+      - gpg_passphrase_example
     ulimits:
       nofile:
         soft: 65536

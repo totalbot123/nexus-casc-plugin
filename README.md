@@ -374,3 +374,5 @@ repository:
             - "docker-hosted"
             - "docker-proxy"
 ```
+
+Additional examples including apt, raw and yum are in the file `default-nexus.yml`
