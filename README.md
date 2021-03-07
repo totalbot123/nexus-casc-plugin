@@ -131,6 +131,25 @@ security:
 
 #### Repository
 
+for any repositories that require authentication it looks like this:
+```yaml
+repository:
+  repositories:
+    - name: some-proxy
+      attributes:
+        httpclient:
+          connection:
+            blocked: false
+            autoBlock: true
+          authentication:
+            type: username  # or ntlm
+            username: test
+            password: test
+            #ntlmHost: someHost
+            #ntlmDomain: someDomain
+            preemptive: false # or true
+```
+
 ```yaml
 repository:
   pruneBlobStores: true # True to delete blob stores not present in this configuration file
