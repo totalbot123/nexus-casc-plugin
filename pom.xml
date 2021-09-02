@@ -21,7 +21,7 @@
         <build-helper-maven-plugin.version>3.2.0</build-helper-maven-plugin.version>
         <docker-compose-maven-plugin.version>4.0.0</docker-compose-maven-plugin.version>
 
-        <snakeyaml.version>1.26</snakeyaml.version>
+        <snakeyaml.version>1.28</snakeyaml.version>
 
         <junit-jupiter.version>5.6.2</junit-jupiter.version>
         <system-lambda.version>1.2.0</system-lambda.version>
@@ -126,6 +126,24 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-dependency-convergence</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <fail>true</fail>
+                            <rules>
+                                <DependencyConvergence/>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.karaf.tooling</groupId>
                 <artifactId>karaf-maven-plugin</artifactId>
