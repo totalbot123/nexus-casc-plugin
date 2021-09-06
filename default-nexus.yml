@@ -20,6 +20,8 @@ core:
     - host1.internal.lan
     - host2.internal.lan
 capabilities:
+  - type: analytics-configuration
+    enabled: false
   - type: OutreachManagementCapability
     enabled: false
 security:
