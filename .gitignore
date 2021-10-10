@@ -4,3 +4,9 @@
 target/
 /.env
 /.direnv/
+target/
+bin/
+.settings/
+.classpath
+.factorypath
+.project

@@ -3,16 +3,12 @@
 version: '3.8'
 
 secrets:
-  password_johndoe:
-    file: ./password_johndoe
-  gpg_key_example:
-    file: ./gpg-example.key
-  gpg_passphrase_example:
-    file: ./gpg-example.passphrase
+  admin_pw:
+    file: ./admin_pw
 
 services:
   nexus:
-    image: 'sonatype/nexus3:${NEXUS_DOCKER_VERSION}'
+    image: 'sonatype/nexus3'
     container_name: 'nexus'
     user: 'nexus'
     environment:
@@ -30,9 +26,7 @@ services:
     expose:
       - '${NEXUS_UI_PORT}'
     secrets:
-      - password_johndoe
-      - gpg_key_example
-      - gpg_passphrase_example
+      - admin_pw
     ulimits:
       nofile:
         soft: 65536

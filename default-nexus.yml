@@ -91,7 +91,7 @@ security:
     - username: johndoe
       firstName: John
       lastName: Doe
-      password: "${file:/run/secrets/password_johndoe}"
+      password: "${file:/run/secrets/admin_pw}"
       updateExistingPassword: true
       email: johndoe@example.org
       roles:
@@ -248,162 +248,7 @@ repository:
         lastDownloaded: 864000
   pruneRepositories: true
   repositories:
-    # https://help.sonatype.com/repomanager3/formats/apt-repositories
-    - name: apt-hosted
-      online: true
-      recipeName: apt-hosted
-      attributes:
-        apt:
-          distribution: focal
-        aptSigning:
-          keypair: "${file:/run/secrets/gpg_key_example}"
-          passphrase: "${file:/run/secrets/gpg_passphrase_example}"
-        storage:
-          blobStoreName: apt
-          strictContentTypeValidation: true
-          writePolicy: ALLOW_ONCE
-        cleanup:
-          policyName:
-            - None
-    - name: apt-ubuntu
-      online: true
-      recipeName: apt-proxy
-      attributes:
-        apt:
-          distribution: focal
-        aptSigning:
-          keypair: "${file:/run/secrets/gpg_key_example}"
-          passphrase: "${file:/run/secrets/gpg_passphrase_example}"
-        proxy:
-          contentMaxAge: -1
-          remoteUrl: https://archive.ubuntu.com/ubuntu/
-          metadataMaxAge: 1440
-        storage:
-          blobStoreName: apt
-          strictContentTypeValidation: true
-          writePolicy: ALLOW_ONCE
-        cleanup:
-          policyName:
-            - cleanup-apt-proxy
-    # https://help.sonatype.com/repomanager3/formats/docker-registry
-    - name: docker-hosted
-      online: true
-      recipeName: docker-hosted
-      attributes:
-        docker:
-          forceBasicAuth: true  # Do not permit anonymous access to this repository
-          v1Enabled: true
-          #httpPort: 8082   # Uncomment to activate
-          #httpsPort: 8083  # Requires Nexus Jetty be configured to use SSL Certificates
-        storage:
-          blobStoreName: docker
-          strictContentTypeValidation: true
-          writePolicy: ALLOW
-        cleanup:
-          policyName:
-            - None
-    - name: docker-proxy
-      online: true
-      recipeName: docker-proxy
-      attributes:
-        docker:
-          forceBasicAuth: false  # Allow anonymous access
-          v1Enabled: true
-        proxy:
-          remoteUrl: https://registry-1.docker.io
-          contentMaxAge: -1.0
-          metadataMaxAge: 1440.0
-        dockerProxy:
-          indexType: HUB
-          cacheForeignLayers: true
-          foreignLayerUrlWhitelist:
-            - '.*'
-        httpclient:
-          blocked: false
-          autoBlock: true
-          connection:
-            useTrustStore: false
-        storage:
-          blobStoreName: docker
-          strictContentTypeValidation: true
-        routingRules:
-          routingRuleId: null
-        negativeCache:
-          enabled: true
-          timeToLive: 1440.0
-        cleanup:
-          policyName:
-            - cleanup-docker-proxy
-    - name: docker
-      online: true
-      recipeName: docker-group
-      attributes:
-        docker:
-          forceBasicAuth: false  # Each repo uses its own setting
-          v1Enabled: true
-        storage:
-          blobStoreName: docker
-          strictContentTypeValidation: true
-        group:
-          memberNames:
-            - "docker-hosted"
-            - "docker-proxy"
-    # https://help.sonatype.com/repomanager3/formats/go-repositories
-    # GOPROXY should point to the _group_ repository URL
-    # golang requires anonymous access for this to work
-    - name: golang-gonexus-proxy
-      online: true
-      recipeName: go-proxy
-      attributes:
-        golang:
-          forceBasicAuth: false  # Allow anonymous access
-          v1Enabled: true
-        proxy:
-          remoteUrl: https://gonexus.dev
-          contentMaxAge: -1.0
-          metadataMaxAge: 1440.0
-        httpclient:
-          blocked: false
-          autoBlock: true
-          connection:
-            useTrustStore: false
-        storage:
-          blobStoreName: golang
-          strictContentTypeValidation: true
-        routingRules:
-          routingRuleId: null
-        negativeCache:
-          enabled: true
-          timeToLive: 1440.0
-        cleanup:
-          policyName:
-            - cleanup-golang-proxy
-    - name: golang-group
-      online: true
-      recipeName: go-group
-      attributes:
-        golang:
-          forceBasicAuth: false  # Each repo uses its own setting
-          v1Enabled: true
-        storage:
-          blobStoreName: golang
-          strictContentTypeValidation: true
-        group:
-          memberNames:
-            - "golang-gonexus-proxy"
-    # https://help.sonatype.com/repomanager3/formats/maven-repositories
-    - name: maven-snapshots
-      online: true
-      recipeName: maven2-hosted
-      attributes:
-        maven:
-          versionPolicy: SNAPSHOT
-          layoutPolicy: STRICT
-        storage:
-          writePolicy: ALLOW
-          strictContentTypeValidation: true
-          blobStoreName: maven
-    - name: maven-releases
+    - name: vprofile-release
       online: true
       recipeName: maven2-hosted
       attributes:
@@ -413,8 +258,19 @@ repository:
         storage:
           writePolicy: ALLOW_ONCE
           strictContentTypeValidation: true
-          blobStoreName: maven
-    - name: maven-central
+          blobStoreName: default
+    - name: vprofile-snapshot
+      online: true
+      recipeName: maven2-hosted
+      attributes:
+        maven:
+          versionPolicy: SNAPSHOT
+          layoutPolicy: STRICT
+        storage:
+          writePolicy: ALLOW_ONCE
+          strictContentTypeValidation: true
+          blobStoreName: default
+    - name: vpro-maven-central
       online: true
       recipeName: maven2-proxy
       attributes:
@@ -426,19 +282,15 @@ repository:
           timeToLive: 1440
           enabled: true
         storage:
-          strictContentTypeValidation: false
-          blobStoreName: maven
-        httpclient:
-          connection:
-            blocked: false
-            autoBlock: true
+          strictContentTypeValidation: true
+          blobStoreName: default
         maven:
           versionPolicy: RELEASE
-          layoutPolicy: PERMISSIVE
+          layoutPolicy: STRICT
         cleanup:
           policyName:
             - cleanup-maven-proxy
-    - name: maven
+    - name: vpro-maven-group
       online: true
       recipeName: maven2-group
       attributes:
@@ -446,285 +298,9 @@ repository:
           versionPolicy: MIXED
         group:
           memberNames:
-            - "maven-snapshots"
-            - "maven-releases"
-            - "maven-central"
+            - "vpro-maven-central"
+            - "vprofile-release"
+            - "vprofile-snapshot"
         storage:
-          blobStoreName: maven
-    # https://help.sonatype.com/repomanager3/formats/npm-registry
-    - name: npm-hosted
-      online: true
-      recipeName: npm-hosted
-      attributes:
-        storage:
-          blobStoreName: npm
           strictContentTypeValidation: true
-          writePolicy: ALLOW_ONCE
-        cleanup:
-          policyName:
-            - None
-    - name: npm-proxy
-      online: true
-      recipeName: npm-proxy
-      attributes:
-        proxy:
-          remoteUrl: https://registry.npmjs.org
-          contentMaxAge: -1.0
-          metadataMaxAge: 1440.0
-        httpclient:
-          blocked: false
-          autoBlock: true
-          connection:
-            useTrustStore: false
-        storage:
-          blobStoreName: npm
-          strictContentTypeValidation: true
-        routingRules:
-          routingRuleId: null
-        negativeCache:
-          enabled: true
-          timeToLive: 1440.0
-        cleanup:
-          policyName:
-            - cleanup-npm-proxy
-    - name: npm
-      online: true
-      recipeName: npm-group
-      attributes:
-        storage:
-          blobStoreName: npm
-          strictContentTypeValidation: true
-        group:
-          memberNames:
-            - "npm-proxy"
-            - "npm-hosted"
-    # NuGet Support: https://help.sonatype.com/repomanager3/formats/nuget-repositories
-    # v3 URLs must be used if v3 proxy is present
-    - name: nuget-proxy
-      online: true
-      recipeName: nuget-proxy
-      attributes:
-        proxy:
-          remoteUrl: https://api.nuget.org/v3/index.json
-          contentMaxAge: -1.0
-          metadataMaxAge: 1440.0
-        httpclient:
-          blocked: false
-          autoBlock: true
-          connection:
-            useTrustStore: false
-        storage:
-          blobStoreName: nuget
-          strictContentTypeValidation: true
-        negativeCache:
-          enabled: true
-          timeToLive: 1440.0
-        cleanup:
-          policyName:
-            - cleanup-nuget-proxy
-    - name: nuget-hosted
-      online: true
-      recipeName: nuget-hosted
-      attributes:
-        storage:
-          blobStoreName: nuget
-          strictContentTypeValidation: true
-          writePolicy: ALLOW_ONCE
-    - name: nuget
-      online: true
-      recipeName: nuget-group
-      attributes:
-        storage:
-          blobStoreName: nuget
-          strictContentTypeValidation: true
-        group:
-          memberNames:
-            - "nuget-hosted"
-            - "nuget-proxy"
-    # https://help.sonatype.com/repomanager3/formats/pypi-repositories
-    - name: pypi-proxy
-      online: true
-      recipeName: pypi-proxy
-      attributes:
-        proxy:
-          remoteUrl: https://pypi.org/
-          contentMaxAge: -1.0
-          metadataMaxAge: 1440.0
-        httpclient:
-          blocked: false
-          autoBlock: true
-          connection:
-            useTrustStore: false
-        storage:
-          blobStoreName: pypi
-          strictContentTypeValidation: true
-        negativeCache:
-          enabled: true
-          timeToLive: 1440.0
-        cleanup:
-          policyName:
-            - cleanup-pypi-proxy
-    - name: pypi-hosted
-      online: true
-      recipeName: pypi-hosted
-      attributes:
-        storage:
-          blobStoreName: pypi
-          strictContentTypeValidation: true
-          writePolicy: ALLOW_ONCE
-    - name: pypi-group
-      online: true
-      recipeName: pypi-group
-      attributes:
-        storage:
-          blobStoreName: pypi
-          strictContentTypeValidation: true
-        group:
-          memberNames:
-            - "pypi-hosted"
-            - "pypi-proxy"
-    # https://help.sonatype.com/repomanager3/formats/raw-repositories
-    - name: raw-hosted
-      online: true
-      recipeName: raw-hosted
-      attributes:
-        storage:
-          blobStoreName: raw
-          strictContentTypeValidation: true
-          writePolicy: ALLOW
-        cleanup:
-          policyName:
-            - None
-        # How to configure proprietary component - requires Nexus firewall
-        raw:
-          contentDisposition: ATTACHMENT  # or inline
-        component:
-          proprietaryComponents: true
-    - name: nodejs-dist
-      online: true
-      recipeName: raw-proxy
-      attributes:
-        raw:
-          contentDisposition: ATTACHMENT
-        proxy:
-          remoteUrl: https://nodejs.org/dist/
-          contentMaxAge: -1.0
-          metadataMaxAge: 1440.0
-        httpclient:
-          blocked: false
-          autoBlock: true
-          connection:
-            useTrustStore: false
-        storage:
-          blobStoreName: raw
-          strictContentTypeValidation: true
-        negativeCache:
-          enabled: true
-          timeToLive: 1440.0
-        cleanup:
-          policyName:
-            - cleanup-raw-proxy
-    # https://help.sonatype.com/repomanager3/formats/rubygems-repositories
-    - name: rubygems-proxy
-      online: true
-      recipeName: rubygems-proxy
-      attributes:
-        proxy:
-          remoteUrl: https://rubygems.org/
-          contentMaxAge: -1.0
-          metadataMaxAge: 1440.0
-        httpclient:
-          blocked: false
-          autoBlock: true
-          connection:
-            useTrustStore: false
-        storage:
-          blobStoreName: rubygems
-          strictContentTypeValidation: true
-        negativeCache:
-          enabled: true
-          timeToLive: 1440.0
-        cleanup:
-          policyName:
-            - cleanup-rubygems-proxy
-    - name: rubygems-hosted
-      online: true
-      recipeName: rubygems-hosted
-      attributes:
-        storage:
-          blobStoreName: rubygems
-          strictContentTypeValidation: true
-          writePolicy: ALLOW_ONCE
-    - name: rubygems-group
-      online: true
-      recipeName: rubygems-group
-      attributes:
-        storage:
-          blobStoreName: rubygems
-          strictContentTypeValidation: true
-        group:
-          memberNames:
-            - "rubygems-hosted"
-            - "rubygems-proxy"
-    # https://help.sonatype.com/repomanager3/formats/yum-repositories
-    # Please read the documentation around repodataDepth
-    - name: yum-hosted
-      online: true
-      recipeName: yum-hosted
-      attributes:
-        yum:
-          repodataDepth: 3
-          deployPolicy: STRICT  # PERMISSIVE for maven yum deployment
-        storage:
-          blobStoreName: yum
-          strictContentTypeValidation: true
-          writePolicy: ALLOW
-        cleanup:
-          policyName:
-            - None
-    - name: yum-centos
-      online: true
-      recipeName: yum-proxy
-      attributes:
-        yum:
-          repodataDepth: 3
-          deployPolicy: STRICT  # PERMISSIVE for maven yum deployment
-        yumSigning:
-          keypair: "${file:/run/secrets/gpg_key_example}"
-          passphrase: "${file:/run/secrets/gpg_passphrase_example}"
-        httpclient:
-          blocked: false
-          autoBlock: true
-          connection:
-            useTrustStore: false
-        negativeCache:
-          enabled: true
-          timeToLive: 1440.0
-        proxy:
-          contentMaxAge: -1
-          remoteUrl: http://mirror.centos.org/centos/
-          metadataMaxAge: 1440
-        storage:
-          blobStoreName: yum
-          strictContentTypeValidation: true
-          writePolicy: ALLOW_ONCE
-        cleanup:
-          policyName:
-            - cleanup-yum-proxy
-    - name: yum-group
-      online: true
-      recipeName: yum-group
-      attributes:
-        group:
-          memberNames:
-            - yum-hosted
-            - yum-centos
-        yumSigning:
-          keypair: "${file:/run/secrets/gpg_key_example}"
-          passphrase: "${file:/run/secrets/gpg_passphrase_example}"
-        storage:
-          blobStoreName: yum
-          strictContentTypeValidation: true
-        cleanup:
-          policyName:
-            - cleanup-yum-proxy
+          blobStoreName: default
